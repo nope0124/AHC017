@@ -5,13 +5,52 @@ typedef long long int ll;
 typedef long double ld;
 typedef pair<int, int> pint;
 
+
+
+typedef enum
+{
+    Unconstructed,
+    Occupied,
+    Constructed,
+} Road_Status;
+
 short N, M, D, K;
+
 
 struct Edge {
     short edge_id;
     short from;
     short to;
     int cost;
+    Road_Status road_status = Unconstructed;
+    bool operator==(const Edge& other) { return edge_id == other.edge_id; }
+    bool operator!=(const Edge& other) { return edge_id != other.edge_id; }
+    bool operator<(const Edge& other) const {
+        if(cost == other.cost) {
+            if(edge_id == other.edge_id) {
+                return false;
+            }else {
+                return edge_id < other.edge_id;
+            }
+        }else {
+            return cost < other.cost;
+        }
+    }
+    bool operator>(const Edge& other) const {
+        if(cost == other.cost) {
+            if(edge_id == other.edge_id) {
+                return false;
+            }else {
+                return edge_id > other.edge_id;
+            }
+        }else {
+            return cost > other.cost;
+        }
+    }
+    friend ostream& operator<<(ostream& os, const Edge& edge) {
+        os << "(id: " << edge.edge_id << ", cost: " << edge.cost << ")";
+        return os;
+    }
 };
 
 struct Dijkstra {
@@ -95,7 +134,7 @@ struct UnionFind {
 vector<vector<int> > compute_dist_matrix(vector<Edge> edge_list, vector<short> ans, short day) {
     vector<Edge> new_edge_list;
     for(short i = 0; i < M; i++) {
-        if(ans[i] == day) continue;
+        if(ans[edge_list[i].edge_id] == day) continue;
         new_edge_list.push_back(edge_list[i]);
     }
     Dijkstra djk = Dijkstra(new_edge_list);
@@ -127,11 +166,14 @@ ll compute_score(vector<short> ans, vector<Edge> edge_list) {
         ll tmp = 0;
         for(short i = 0; i < N; i++) {
             for(short j = i + 1; j < N; j++) {
+                // if(i == 0) cerr << dist[i][j] << endl;
                 tmp += (dist[i][j] - dist0[i][j]);
             }
         }
         num += tmp;
+        
         fs.push_back(tmp / (N * (N - 1) / 2));
+        // cerr << fs.back() << endl;
     }
     
     ll den = D * N * (N - 1) / 2;
@@ -152,13 +194,39 @@ int main() {
         edge_list[i].to--;
         unconstructed_edge_list[i] = edge_list[i].edge_id;
     }
-    
+    sort(edge_list.begin(), edge_list.end());
+    short unconstructed_number = M;
     for(short d = 0; d < D; d++) {
-        short construction_count_per_day = min((M + D - 1) / D, (int)(unconstructed_edge_list.size()));
-        for(short k = 0; k < construction_count_per_day; k++) {
-            short idx = rand()%unconstructed_edge_list.size();
-            ans[unconstructed_edge_list[idx]] = d + 1;
-            unconstructed_edge_list.erase(unconstructed_edge_list.begin() + idx);
+        UnionFind uf = UnionFind(N);
+        
+        for(short i = 0; i < M; i++) {
+            if(edge_list[i].road_status == Constructed) {
+                uf.merge(edge_list[i].from, edge_list[i].to);
+            }else {
+                edge_list[i].road_status = Unconstructed;
+            }
+        }
+
+        for(short i = 0; i < M; i++) {
+            if(edge_list[i].road_status == Constructed) continue;
+            if(uf.issame(edge_list[i].from, edge_list[i].to)) continue;
+            uf.merge(edge_list[i].from, edge_list[i].to);
+            edge_list[i].road_status = Occupied;
+        }
+        
+
+        vector<Edge*> unconstructed_edge;
+        for(short i = 0; i < M; i++) {
+            if(edge_list[i].road_status != Unconstructed) continue;
+            unconstructed_edge.push_back(&edge_list[i]);
+        }
+        short unconstructed_edge_number = unconstructed_edge.size();
+        for(short i = 0; i < min(unconstructed_edge_number, K); i++) {
+        // for(short i = 0; i < min((int)unconstructed_edge_number, (M + D - 1) / D); i++) {
+            short idx = rand()%unconstructed_edge.size();
+            unconstructed_edge[idx]->road_status = Constructed;
+            ans[unconstructed_edge[idx]->edge_id] = d + 1;
+            unconstructed_edge.erase(unconstructed_edge.begin() + idx);
         }
     }
     
