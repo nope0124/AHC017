@@ -370,40 +370,40 @@ int main() {
 
     Score score = Score(ans, edge_list);
 
-    // while(true) {
-    //     clock_t end = clock();
-    //     if((ld)(end - start) / CLOCKS_PER_SEC > 1.0) break;
-    //     vector<ll> cnt(D, 0);
-    //     for(ll j = 0; j < M; j++) {
-    //         cnt[score.ans[j] - 1]++;
-    //     }
+    while(true) {
+        clock_t end = clock();
+        if((ld)(end - start) / CLOCKS_PER_SEC > 3.0) break;
+        vector<ll> cnt(D, 0);
+        for(ll j = 0; j < M; j++) {
+            cnt[score.ans[j] - 1]++;
+        }
         
-    //     if(tmp_vec.size() > 0) {
-    //         ll tmp_idx = rand()%tmp_vec.size();
-    //         vector<ll> selection;
-    //         for(ll j = 0; j < D; j++) {
-    //             if(ans[tmp_vec[tmp_idx].edge_id] == j + 1) continue;
-    //             for(ll k = 0; k < K - cnt[j]; k++) {
-    //                 selection.push_back(j + 1);
-    //             }
-    //         }
-    //         // for(ll i = 0; i < selection.size(); i++) cerr << selection[i] << " \n"[i == selection.size() - 1];
-    //         ll ret = score.update_construction_day(tmp_vec[tmp_idx], selection[rand()%selection.size()]);
-    //         // cerr << ret << endl;
-    //         if(ret == 0) {
-    //             selection.erase(selection.begin() + tmp_idx);
-    //         }
-    //     }else {
-    //         vector<ll> selection;
-    //         for(ll j = 0; j < D; j++) {
-    //             for(ll k = 0; k < K - cnt[j]; k++) {
-    //                 selection.push_back(j + 1);
-    //             }
-    //         }
-    //         score.update_construction_day(edge_list[rand()%edge_list.size()], selection[rand()%selection.size()]);
-    //     }
+        if(tmp_vec.size() > 0) {
+            ll tmp_idx = rand()%tmp_vec.size();
+            vector<ll> selection;
+            for(ll j = 0; j < D; j++) {
+                if(ans[tmp_vec[tmp_idx].edge_id] == j + 1) continue;
+                for(ll k = 0; k < K - cnt[j]; k++) {
+                    selection.push_back(j + 1);
+                }
+            }
+            // for(ll i = 0; i < selection.size(); i++) cerr << selection[i] << " \n"[i == selection.size() - 1];
+            ll ret = score.update_construction_day(tmp_vec[tmp_idx], selection[rand()%selection.size()]);
+            // cerr << ret << endl;
+            if(ret == 0) {
+                selection.erase(selection.begin() + tmp_idx);
+            }
+        }else {
+            vector<ll> selection;
+            for(ll j = 0; j < D; j++) {
+                for(ll k = 0; k < K - cnt[j]; k++) {
+                    selection.push_back(j + 1);
+                }
+            }
+            score.update_construction_day(edge_list[rand()%edge_list.size()], selection[rand()%selection.size()]);
+        }
         
-    // }
+    }
 
     for(ll i = 0; i < M; i++) {
         cout << score.ans[i] << " \n"[i == M - 1];
