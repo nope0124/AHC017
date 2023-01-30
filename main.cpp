@@ -13,6 +13,7 @@ typedef enum {
 } Road_Status;
 
 typedef enum {
+    FatalError, // 想定外のエラー
     Failed, // 悪化
     OK,      // 改善
     Penalty,   // ペナルティが残っている
@@ -20,7 +21,7 @@ typedef enum {
 
 
 ll N, M, D, K;
-const ll INF = 1e16;
+const ll INF = 1e18;
 
 struct Edge {
     ll edge_id;
@@ -70,13 +71,15 @@ struct Dijkstra {
         };
         vector<Dijkstra_Edge> graph[1010];
         vector<ll> dist;
+        ll score;
 
     public:
         
-        Dijkstra(vector<Edge> edge_list) {
+        Dijkstra(vector<Edge> edge_list, bool is_directed=false) {
             for(ll i = 0; i < edge_list.size(); i++) {
+                if(edge_list[i].edge_id == -1) continue;
                 graph[edge_list[i].from].push_back(Dijkstra_Edge(edge_list[i].to, edge_list[i].cost));
-                graph[edge_list[i].to].push_back(Dijkstra_Edge(edge_list[i].from, edge_list[i].cost));
+                if(is_directed == false) graph[edge_list[i].to].push_back(Dijkstra_Edge(edge_list[i].from, edge_list[i].cost));
             }
             for(ll i = 0; i < N; i++) dist.push_back(1000000000);
         }
@@ -98,6 +101,53 @@ struct Dijkstra {
                 }
             }
             return dist;
+        }
+
+        vector<Edge> get_edge_list() {
+            ll s = 0;
+            vector<Edge> edge_list(N - 1);
+            for(ll i = 0; i < N - 1; i++) edge_list[i].edge_id = -1;
+            priority_queue<pll, vector<pll>, greater<pll> > que;
+            for(ll i = 0; i < N; i++) dist[i] = 1000000000;
+            dist[s] = 0;
+            que.push(pll(0, s));
+            while(!que.empty()){
+                pll p = que.top(); que.pop();
+                ll v = p.second;
+                if(dist[v] < p.first) continue;
+                for(Dijkstra_Edge e: graph[v]) {
+                    if(dist[e.to] > dist[v] + e.cost){
+                        dist[e.to] = dist[v] + e.cost;
+                        Edge tmp_edge;
+                        tmp_edge.edge_id = 0;
+                        tmp_edge.from = v;
+                        tmp_edge.to = e.to;
+                        tmp_edge.cost = e.cost;
+                        edge_list[e.to - 1] = tmp_edge;
+                        que.push(pll(dist[e.to], e.to));
+                    }
+                }
+            }
+            return edge_list;
+        }
+
+        ll dfs(Dijkstra_Edge v) {
+            if(graph[v.to].size() == 0) {
+                score += (N - 1) * v.cost;
+                return 1;
+            }
+            ll node_count = 0;
+            for(Dijkstra_Edge e: graph[v.to]) {
+                node_count += dfs(e);
+            }
+            score += (N - node_count) * node_count * v.cost; 
+            return node_count;
+        }
+
+        ll get_score() {
+            score = 0;
+            dfs(Dijkstra_Edge(0, 0));
+            return score;
         }
 
 };
@@ -151,46 +201,46 @@ template <typename T> vector<T> random_sample(vector<T> population, int k) {
 }
 
 
-struct WarshallFloyd {
-    ll initial_total_cost;
-    WarshallFloyd(vector<vector<ll> > dist0) {
-        initial_total_cost = 0;
-        for(ll i = 0; i < N; i++) {
-            for(ll j = i + 1; j < N; j++) {
-                initial_total_cost += dist0[i][j];
-            }
-        }
-    }
-    ll add_edge(vector<vector<ll> > &dist, Edge edge, ll penalty_count) {
-        ll s = edge.from;
-        ll t = edge.to;
-        ll cost = edge.cost;
-        dist[s][t] = dist[t][s] = min(dist[s][t], cost);
-        set<ll> st;
-        st.insert(s);
-        st.insert(t);
-        for(ll k : st) {
-            for(ll i = 0; i < N; i++) {
-                for(ll j = 0; j < N; j++) {
-                    dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j]);
-                }
-            }
-        }
-        ll total_cost = -initial_total_cost;
-        for(ll i = 0; i < N; i++) {
-            for(ll j = i + 1; j < N; j++) {
-                if(dist[i][j] == 1000000000) penalty_count++;
-                total_cost += dist[i][j];
-            }
-        }
-        return total_cost;
-    }
-};
+// struct WarshallFloyd {
+//     ll initial_total_cost;
+//     WarshallFloyd(vector<vector<ll> > dist0) {
+//         initial_total_cost = 0;
+//         for(ll i = 0; i < N; i++) {
+//             for(ll j = i + 1; j < N; j++) {
+//                 initial_total_cost += dist0[i][j];
+//             }
+//         }
+//     }
+//     ll add_edge(vector<vector<ll> > &dist, Edge edge, ll penalty_count) {
+//         ll s = edge.from;
+//         ll t = edge.to;
+//         ll cost = edge.cost;
+//         dist[s][t] = dist[t][s] = min(dist[s][t], cost);
+//         set<ll> st;
+//         st.insert(s);
+//         st.insert(t);
+//         for(ll k : st) {
+//             for(ll i = 0; i < N; i++) {
+//                 for(ll j = 0; j < N; j++) {
+//                     dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j]);
+//                 }
+//             }
+//         }
+//         ll total_cost = -initial_total_cost;
+//         for(ll i = 0; i < N; i++) {
+//             for(ll j = i + 1; j < N; j++) {
+//                 if(dist[i][j] == 1000000000) penalty_count++;
+//                 total_cost += dist[i][j];
+//             }
+//         }
+//         return total_cost;
+//     }
+// };
 
 struct Info {
     vector<ll> construction_day_list;
     vector<ll> scores;
-    vector<vector<vector<ll> > > dist;
+    // vector<vector<vector<ll> > > dist;
 
     void dump() {
         for(ll i = 0; i < M; i++) {
@@ -212,9 +262,9 @@ struct Score {
         info.construction_day_list = _construction_day_list;
         vector<ll> _scores(D + 1, INF);
         info.scores = _scores;
-        vector<vector<vector<ll> > > _dist(D + 1, vector<vector<ll> >(N, vector<ll>(N, 1000000000)));
-        _dist[0] = compute_dist_matrix(0);
-        info.dist = _dist;
+        // vector<vector<vector<ll> > > _dist(D + 1, vector<vector<ll> >(N, vector<ll>(N, 1000000000)));
+        // _dist[0] = compute_dist_matrix(0);
+        // info.dist = _dist;
         penalty_count = 0;
     }
 
@@ -242,16 +292,16 @@ struct Score {
         return tmp_dist;
     }
 
-    ll compute_score_per_day(ll day) {
-        ll tmp = 0;
-        for(ll i = 0; i < N; i++) {
-            for(ll j = i + 1; j < N; j++) {
-                if(info.dist[day][i][j] == 1000000000) penalty_count++;
-                tmp += (info.dist[day][i][j] - info.dist[0][i][j]);
-            }
-        }
-        return tmp;
-    }
+    // ll compute_score_per_day(ll day) {
+    //     ll tmp = 0;
+    //     for(ll i = 0; i < N; i++) {
+    //         for(ll j = i + 1; j < N; j++) {
+    //             if(info.dist[day][i][j] == 1000000000) penalty_count++;
+    //             tmp += (info.dist[day][i][j] - info.dist[0][i][j]);
+    //         }
+    //     }
+    //     return tmp;
+    // }
 
     Response delete_penalty(Edge edge, ll to_day) {
         vector<ll> dist_from_day, dist_to_day;
@@ -278,38 +328,48 @@ struct Score {
         }
     }
 
-    Response update_construction_day(Edge edge, ll to_day) {
+    ll compute_prototype_score(ll day) { // O(M * logN) = O(30000)
+        vector<Edge> new_edge_list;
+        for(ll i = 0; i < M; i++) {
+            if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
+            new_edge_list.push_back(edge_list[i]);
+        }
+        Dijkstra djk = Dijkstra(new_edge_list);
+        vector<Edge> tmp_edge_list = djk.get_edge_list();
+        Dijkstra new_djk = Dijkstra(tmp_edge_list, true);
+        ll score = 0;
+        for(ll i = 0; i < N - 1; i++) if(tmp_edge_list[i].edge_id == -1) score += N * 1000000000;
+        score += new_djk.get_score();
+        return score;
+    }
+
+    Response update(Edge edge, ll to_day) {
         ll from_day = info.construction_day_list[edge.edge_id];
+        
         if(from_day == 0 || to_day == 0) {
             // cerr << "Error: from_day == 0 || to_day == 0" << endl;
-            return Failed;
+            return FatalError;
         }
         if(from_day == to_day) {
             // cerr << "Error: from_day == to_day" << endl;
             return Failed;
         }
-        if(info.scores[from_day] == INF) {
-            info.dist[from_day] = compute_dist_matrix(from_day);
-            info.scores[from_day] = compute_score_per_day(from_day);
-        }
-        if(info.scores[to_day]  == INF) {
-            info.dist[to_day] = compute_dist_matrix(to_day);
-            info.scores[to_day]  = compute_score_per_day(to_day);
-        }
-        penalty_count = 0;
+        
+        if(info.scores[from_day] == INF) info.scores[from_day] = compute_prototype_score(from_day);
+        if(info.scores[to_day]   == INF) info.scores[to_day]   = compute_prototype_score(to_day);
+        
+        // cerr << "scores: " << info.scores[from_day] << ' ' << info.scores[to_day] << endl;
         Info sub_info = info;
         swap(info, sub_info);
         info.construction_day_list[edge.edge_id] = to_day;
-        WarshallFloyd wf = WarshallFloyd(info.dist[0]);
-        info.scores[from_day] = wf.add_edge(info.dist[from_day], edge, penalty_count);
+        info.scores[from_day] = compute_prototype_score(from_day);
         // 工事を無くしてもスコアが改善しない場合
         if(info.scores[from_day] >= sub_info.scores[from_day]) {
             // cerr << "Error: scores[from_day] >= sub_scores[from_day]" << endl;
             swap(info, sub_info);
             return Failed;
         }
-        info.dist[to_day] = compute_dist_matrix(to_day);
-        info.scores[to_day] = compute_score_per_day(to_day);
+        info.scores[to_day] = compute_prototype_score(to_day);
         // 工事日を変更してスコアが悪化する場合
         if(info.scores[from_day] + info.scores[to_day] >= sub_info.scores[from_day] + sub_info.scores[to_day]) {
             // cerr << "Error: scores[from_day] + scores[to_day] >= sub_scores[from_day] + sub_scores[to_day]" << endl;
@@ -317,9 +377,51 @@ struct Score {
             return Failed;
         }
         // 成功
-        if(penalty_count == 0) return OK;
-        else if(penalty_count > 0) return Penalty;
+        return OK;
     }
+
+    // Response update_construction_day(Edge edge, ll to_day) {
+    //     ll from_day = info.construction_day_list[edge.edge_id];
+    //     if(from_day == 0 || to_day == 0) {
+    //         // cerr << "Error: from_day == 0 || to_day == 0" << endl;
+    //         return Failed;
+    //     }
+    //     if(from_day == to_day) {
+    //         // cerr << "Error: from_day == to_day" << endl;
+    //         return Failed;
+    //     }
+    //     if(info.scores[from_day] == INF) {
+    //         info.dist[from_day] = compute_dist_matrix(from_day);
+    //         info.scores[from_day] = compute_score_per_day(from_day);
+    //     }
+    //     if(info.scores[to_day] == INF) {
+    //         info.dist[to_day] = compute_dist_matrix(to_day);
+    //         info.scores[to_day]  = compute_score_per_day(to_day);
+    //     }
+    //     penalty_count = 0;
+    //     Info sub_info = info;
+    //     swap(info, sub_info);
+    //     info.construction_day_list[edge.edge_id] = to_day;
+    //     WarshallFloyd wf = WarshallFloyd(info.dist[0]);
+    //     info.scores[from_day] = wf.add_edge(info.dist[from_day], edge, penalty_count);
+    //     // 工事を無くしてもスコアが改善しない場合
+    //     if(info.scores[from_day] >= sub_info.scores[from_day]) {
+    //         // cerr << "Error: scores[from_day] >= sub_scores[from_day]" << endl;
+    //         swap(info, sub_info);
+    //         return Failed;
+    //     }
+    //     info.dist[to_day] = compute_dist_matrix(to_day);
+    //     info.scores[to_day] = compute_score_per_day(to_day);
+    //     // 工事日を変更してスコアが悪化する場合
+    //     if(info.scores[from_day] + info.scores[to_day] >= sub_info.scores[from_day] + sub_info.scores[to_day]) {
+    //         // cerr << "Error: scores[from_day] + scores[to_day] >= sub_scores[from_day] + sub_scores[to_day]" << endl;
+    //         swap(info, sub_info);
+    //         return Failed;
+    //     }
+    //     // 成功
+    //     if(penalty_count == 0) return OK;
+    //     else if(penalty_count > 0) return Penalty;
+    // }
 
     
 
@@ -337,9 +439,16 @@ struct Score {
         }
         ll num = 0;
         vector<ll> fs;
+        vector<vector<ll> > dist0 = compute_dist_matrix(0);
         for(ll d = 1; d <= D; d++) {
-            info.dist[d] = compute_dist_matrix(d);
-            ll tmp = compute_score_per_day(d);
+            vector<vector<ll> > dist = compute_dist_matrix(d);
+            ll tmp = 0;
+            for(ll i = 0; i < N; i++) {
+                for(ll j = i + 1; j < N; j++) {
+                    if(dist[i][j] == 1000000000) penalty_count++;
+                    tmp += (dist[i][j] - dist0[i][j]);
+                }
+            }
             num += tmp;
             fs.push_back(tmp / (N * (N - 1) / 2));
         }
@@ -414,6 +523,7 @@ int main() {
             vacant_day.push_back(i);
         }
     }
+    // 危険な辺をランダムな位置に振り分ける
     for(ll i = 0; i < M; i++) {
         if(construction_day_list[edge_list[i].edge_id] == 0) {
             ll idx = rand()%vacant_day.size();
@@ -426,13 +536,13 @@ int main() {
 
     Score score = Score(construction_day_list, edge_list);
     
-    if(penalty_edge_list.size() > 0) {
+    // if(penalty_edge_list.size() > 0) {
         // cerr << penalty_edge_list.size() << endl;
         // cerr << vacant_day.size() << endl;
     
         while(true) {
             clock_t end = clock();
-            if((ld)(end - start) / CLOCKS_PER_SEC > 1.0) break;
+            if((ld)(end - start) / CLOCKS_PER_SEC > 3.0) break;
             // cerr << score.compute_score() << endl;
             
             if(penalty_edge_list.size() > 0) {
@@ -445,28 +555,57 @@ int main() {
                         to_day_selection.push_back(j + 1);
                     }
                 }
-                Response response = score.delete_penalty(penalty_edge_list[penalty_edge_idx], to_day_selection[rand()%to_day_selection.size()]);
+                ll tmp_before_day = score.info.construction_day_list[penalty_edge_list[penalty_edge_idx].edge_id];
+                ll tmp_after_day = to_day_selection[rand()%to_day_selection.size()];
+                Response response = score.delete_penalty(penalty_edge_list[penalty_edge_idx], tmp_after_day);
                 if(response == OK) {
                     // cerr << "OK" << endl;
+                    construction_vacant_count_per_day[tmp_before_day - 1]++;
+                    construction_vacant_count_per_day[tmp_after_day - 1]--;
                     penalty_edge_list.erase(penalty_edge_list.begin() + penalty_edge_idx);
                 }else if(response == Penalty) {
+                    construction_vacant_count_per_day[tmp_before_day - 1]++;
+                    construction_vacant_count_per_day[tmp_after_day - 1]--;
                     // cerr << "Penalty" << endl;
                 }else if(response == Failed) {
                     // cerr << "Failed" << endl;
+                }else if(response == FatalError) {
+                    // cerr << "FatalError" << endl;
+                    return 0;
                 }
             }else {
-                break;
-                // vector<ll> to_day_selection;
-                // for(ll j = 0; j < D; j++) {
-                //     for(ll k = 0; k < construction_vacant_count_per_day[j]; k++) {
-                //         to_day_selection.push_back(j + 1);
-                //     }
+                vector<ll> to_day_selection;
+                for(ll j = 0; j < D; j++) {
+                    for(ll k = 0; k < construction_vacant_count_per_day[j]; k++) {
+                        to_day_selection.push_back(j + 1);
+                    }
+                }
+                ll edge_idx = rand()%edge_list.size();
+                // for(ll i = 0; i < to_day_selection.size(); i++ ){
+                //     // cerr << to_day_selection[i] << " \n"[i == to_day_selection.size() - 1];
                 // }
-                // score.update_construction_day(edge_list[rand()%edge_list.size()], to_day_selection[rand()%to_day_selection.size()]);
+
+                ll tmp_before_day = score.info.construction_day_list[edge_list[edge_idx].edge_id];
+                ll tmp_after_day = to_day_selection[rand()%to_day_selection.size()];
+                Response response = score.update(edge_list[edge_idx], tmp_after_day);
+                if(response == OK) {
+                    // cerr << "OK" << endl;
+                    construction_vacant_count_per_day[tmp_before_day - 1]++;
+                    construction_vacant_count_per_day[tmp_after_day - 1]--;
+                }else if(response == Penalty) {
+                    // cerr << "Penalty" << endl;
+                    construction_vacant_count_per_day[tmp_before_day - 1]++;
+                    construction_vacant_count_per_day[tmp_after_day - 1]--;
+                }else if(response == Failed) {
+                    // cerr << "Failed" << endl;
+                }else if(response == FatalError) {
+                    // cerr << "FatalError" << endl;
+                    return 0;
+                }
             }
             
         }
-    }
+    // }
     // if(penalty_edge_list.size() > 0) cerr << "################" << endl;
     // clock_t end = clock();
     // cerr << setprecision(10) << (ld)(end - start) / CLOCKS_PER_SEC << endl;
@@ -474,6 +613,6 @@ int main() {
     // 注意点、入れ替え実装できていないから本番2000ケースで落ちる可能性高い
     // day=5とか危ない、普通にバカ重い
     
-    cerr << score.compute_score() << endl;
+    // cerr << score.compute_score() << endl;
 
 }
