@@ -21,6 +21,7 @@ typedef enum {
 
 
 ll N, M, D, K;
+ld limit = 3.0;
 const ll INF = 1e18;
 
 struct Edge {
@@ -54,7 +55,7 @@ struct Edge {
         }
     }
     friend ostream& operator<<(ostream& os, const Edge& edge) {
-        os << "(id: " << edge.edge_id << ", cost: " << edge.cost << ")";
+        os << "(id: " << edge.edge_id << ", cost: " << edge.cost << ", from: " << edge.from << ", to: " << edge.to << ")";
         return os;
     }
 };
@@ -136,7 +137,7 @@ struct Dijkstra {
                 score += (N - 1) * v.cost;
                 return 1;
             }
-            ll node_count = 0;
+            ll node_count = 1;
             for(Dijkstra_Edge e: graph[v.to]) {
                 node_count += dfs(e);
             }
@@ -542,7 +543,7 @@ int main() {
     
         while(true) {
             clock_t end = clock();
-            if((ld)(end - start) / CLOCKS_PER_SEC > 3.0) break;
+            if((ld)(end - start) / CLOCKS_PER_SEC > limit) break;
             // cerr << score.compute_score() << endl;
             
             if(penalty_edge_list.size() > 0) {
@@ -589,6 +590,7 @@ int main() {
                 ll tmp_after_day = to_day_selection[rand()%to_day_selection.size()];
                 Response response = score.update(edge_list[edge_idx], tmp_after_day);
                 if(response == OK) {
+                    // cerr << score.compute_score() << endl;
                     // cerr << "OK" << endl;
                     construction_vacant_count_per_day[tmp_before_day - 1]++;
                     construction_vacant_count_per_day[tmp_after_day - 1]--;
@@ -613,6 +615,25 @@ int main() {
     // 注意点、入れ替え実装できていないから本番2000ケースで落ちる可能性高い
     // day=5とか危ない、普通にバカ重い
     
-    // cerr << score.compute_score() << endl;
+    cerr << score.compute_score() << endl;
+    // vector<ll> from_nodes = {0, 0, 0, 1, 1, 2};
+    // vector<ll> to_nodes =   {1, 2, 3, 2, 3, 3};
+    // vector<ll> cost_nodes = {4, 2, 3, 1, 5, 6};
+    // vector<Edge> edge_nodes;
+    // for(ll i = 0; i < N; i++) {
+    //     Edge tmp_edge;
+    //     tmp_edge.edge_id = 0;
+    //     tmp_edge.from = from_nodes[i];
+    //     tmp_edge.to = to_nodes[i];
+    //     tmp_edge.cost = cost_nodes[i];
+    //     edge_nodes.push_back(tmp_edge);
+    // }
+    // Dijkstra djk = Dijkstra(edge_nodes);
+    // vector<ll> dist = djk.get_dist(0);
+    // for(ll i = 0; i < N; i++) cout << dist[i] << endl;
+    // vector<Edge> next_edges = djk.get_edge_list();
+    // for(int i = 0; i < next_edges.size(); i++) cerr << "edges "<< next_edges[i] << endl;
+    // Dijkstra next_djk = Dijkstra(next_edges, true);
+    // cout << next_djk.get_score() << endl;
 
 }
