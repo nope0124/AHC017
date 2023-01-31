@@ -21,7 +21,7 @@ typedef enum {
 
 
 ll N, M, D, K;
-ld limit = 5.0;
+ld limit = 3.0;
 const ll INF = 1e18;
 
 struct Edge {
@@ -226,6 +226,7 @@ struct Score {
         edge_list = _edge_list;
         info.construction_day_list = _construction_day_list;
         vector<ll> _scores(D + 1, INF);
+        for(int i = 1; i < D + 1; i++) _scores[i] = evaluate_score(i);
         info.scores = _scores;
         penalty_count = 0;
     }
@@ -280,7 +281,7 @@ struct Score {
         }
     }
 
-    ll compute_prototype_score(ll day) { // O(M * logN) = O(30000)
+    ll evaluate_score(ll day) { // O(M * logN) = O(30000) 
         vector<Edge> new_edge_list;
         for(ll i = 0; i < M; i++) {
             if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
@@ -292,8 +293,6 @@ struct Score {
         ll score = 0;
         for(ll i = 0; i < N; i++) if(tmp_edge_list[i].edge_id == -1) score += (N - 1) * 1000000000;
         score += new_djk.get_score(0);
-
-
 
         ll tmp_idx = 1;
         ll tmp_min = -1;
@@ -309,29 +308,42 @@ struct Score {
         return score;
     }
 
-    Response update(Edge edge, ll to_day) {
-        ll from_day = info.construction_day_list[edge.edge_id];
-        
-        if(from_day == 0 || to_day == 0) {
-            return FatalError;
-        }
-        if(from_day == to_day) {
+    Response change(Edge edge1, Edge edge2) {
+        if(edge1.edge_id == edge2.edge_id) return Failed;
+        if(info.construction_day_list[edge1.edge_id] == info.construction_day_list[edge2.edge_id]) return Failed;
+        Info sub_info = info;
+        swap(info, sub_info);
+        swap(info.construction_day_list[edge1.edge_id], info.construction_day_list[edge2.edge_id]);
+        info.scores[info.construction_day_list[edge1.edge_id]] = evaluate_score(info.construction_day_list[edge1.edge_id]);
+        info.scores[info.construction_day_list[edge2.edge_id]] = evaluate_score(info.construction_day_list[edge2.edge_id]);
+
+        // 工事日を変更してスコアが悪化する場合
+        if(info.scores[info.construction_day_list[edge1.edge_id]] + info.scores[info.construction_day_list[edge2.edge_id]] >= sub_info.scores[info.construction_day_list[edge1.edge_id]] + sub_info.scores[info.construction_day_list[edge2.edge_id]]) {
+            swap(info, sub_info);
             return Failed;
         }
-        
-        if(info.scores[from_day] == INF) info.scores[from_day] = compute_prototype_score(from_day);
-        if(info.scores[to_day]   == INF) info.scores[to_day]   = compute_prototype_score(to_day);
+
+        // 成功
+        return OK;
+    }
+
+    Response update(Edge edge, ll to_day) {
+        ll from_day = info.construction_day_list[edge.edge_id];
+        // if(from_day == 0 || to_day == 0) {
+        //     return FatalError;
+        // }
+        if(from_day == to_day) return Failed;
         
         Info sub_info = info;
         swap(info, sub_info);
         info.construction_day_list[edge.edge_id] = to_day;
-        info.scores[from_day] = compute_prototype_score(from_day);
+        info.scores[from_day] = evaluate_score(from_day);
         // 工事を無くしてもスコアが改善しない場合
         if(info.scores[from_day] >= sub_info.scores[from_day]) {
             swap(info, sub_info);
             return Failed;
         }
-        info.scores[to_day] = compute_prototype_score(to_day);
+        info.scores[to_day] = evaluate_score(to_day);
         // 工事日を変更してスコアが悪化する場合
         if(info.scores[from_day] + info.scores[to_day] >= sub_info.scores[from_day] + sub_info.scores[to_day]) {
             swap(info, sub_info);
@@ -483,36 +495,45 @@ int main() {
                 return 0;
             }
         }else {
-            vector<ll> to_day_selection;
-            for(ll j = 0; j < D; j++) {
-                for(ll k = 0; k < construction_vacant_count_per_day[j]; k++) {
-                    to_day_selection.push_back(j + 1);
+            if(rand()%100 < 100) {
+                vector<ll> to_day_selection;
+                for(ll j = 0; j < D; j++) {
+                    for(ll k = 0; k < construction_vacant_count_per_day[j]; k++) {
+                        to_day_selection.push_back(j + 1);
+                    }
+                }
+                ll edge_idx = rand()%edge_list.size();
+
+                ll tmp_before_day = score.info.construction_day_list[edge_list[edge_idx].edge_id];
+                ll tmp_after_day = to_day_selection[rand()%to_day_selection.size()];
+                Response response = score.update(edge_list[edge_idx], tmp_after_day);
+
+                if(response == OK) {
+                    cnt++;
+                    construction_vacant_count_per_day[tmp_before_day - 1]++;
+                    construction_vacant_count_per_day[tmp_after_day - 1]--;
+                }else if(response == Penalty) {
+                    construction_vacant_count_per_day[tmp_before_day - 1]++;
+                    construction_vacant_count_per_day[tmp_after_day - 1]--;
+                }else if(response == Failed) {
+                }else if(response == FatalError) {
+                    return 0;
+                }
+            }else {
+                ll edge_idx1 = rand()%edge_list.size();
+                ll edge_idx2 = rand()%edge_list.size();
+
+                Response response = score.change(edge_list[edge_idx1], edge_list[edge_idx2]);
+                // cerr << setprecision(10) << "update time: " << (ld)(tmp_end - tmp_start) / CLOCKS_PER_SEC << endl;
+                if(response == OK) {
+                    cnt++;
+                }else if(response == Penalty) {
+                }else if(response == Failed) {
+                }else if(response == FatalError) {
+                    return 0;
                 }
             }
-            ll edge_idx = rand()%edge_list.size();
-
-            ll tmp_before_day = score.info.construction_day_list[edge_list[edge_idx].edge_id];
-            ll tmp_after_day = to_day_selection[rand()%to_day_selection.size()];
-            Response response = score.update(edge_list[edge_idx], tmp_after_day);
-            if(response == OK) {
-                // cnt++;
-                // // if(cnt >= 1400) {
-                // if(cnt % 10 == 0) {
-                //     ll tmp_score = score.compute_score();
-                //     cerr << tmp_score << endl;
-                //     cout << tmp_score << endl;
-                //     score.info.dump();
-                //     cout << endl;
-                // }
-                construction_vacant_count_per_day[tmp_before_day - 1]++;
-                construction_vacant_count_per_day[tmp_after_day - 1]--;
-            }else if(response == Penalty) {
-                construction_vacant_count_per_day[tmp_before_day - 1]++;
-                construction_vacant_count_per_day[tmp_after_day - 1]--;
-            }else if(response == Failed) {
-            }else if(response == FatalError) {
-                return 0;
-            }
+            
         }
         
     }
@@ -522,8 +543,11 @@ int main() {
     score.info.dump();
     // 注意点、入れ替え実装できていないから本番2000ケースで落ちる可能性高い
     // day=5とか危ない、普通にバカ重い
-    
-    // cerr << score.compute_score() << endl;
+    // cerr << cnt << endl;
+    cerr << score.compute_score() << endl;
+    // for(ll i = 0; i < D; i++) {
+    //     cerr << construction_vacant_count_per_day[i] << " \n"[i == D - 1];
+    // }
 
 
     // N = 4, N = 6;
