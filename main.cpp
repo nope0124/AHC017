@@ -21,7 +21,7 @@ typedef enum {
 } Response;
 
 ll N, M, D, K;
-ld limit = 3.0;
+ld limit = 5.0;
 const ll INF = 1e18;
 
 struct Edge {
@@ -309,153 +309,136 @@ struct Score {
     }
 
 
-    Response edge_swap(ll day1, ll day2, ll num=1) {
-        if(day1 == day2) return Failed;
-        Info sub_info = info;
-        swap(info, sub_info);
-        num = min(num, (ll)info.edge_list_per_day[day1].size());
-        num = min(num, (ll)info.edge_list_per_day[day2].size());
-        vector<Edge> edge_list1, edge_list2;
-        rep(i, num) {
-            ll idx1 = rand()%info.edge_list_per_day[day1].size();
-            ll idx2 = rand()%info.edge_list_per_day[day2].size();
-            edge_list1.push_back(info.edge_list_per_day[day1][idx1]);
-            edge_list2.push_back(info.edge_list_per_day[day2][idx2]);
-            info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
-            info.edge_list_per_day[day2].erase(info.edge_list_per_day[day2].begin() + idx2);
-        }
-        rep(i, num) {
-            info.edge_list_per_day[day1].push_back(edge_list2[i]);
-            info.edge_list_per_day[day2].push_back(edge_list1[i]);
-        }
+    // Response edge_swap(ll day1, ll day2, ll num=1) {
+    //     if(day1 == day2) return Failed;
+    //     Info sub_info = info;
+    //     swap(info, sub_info);
+    //     num = min(num, (ll)info.edge_list_per_day[day1].size());
+    //     num = min(num, (ll)info.edge_list_per_day[day2].size());
+    //     vector<Edge> edge_list1, edge_list2;
+    //     rep(i, num) {
+    //         ll idx1 = rand()%info.edge_list_per_day[day1].size();
+    //         ll idx2 = rand()%info.edge_list_per_day[day2].size();
+    //         edge_list1.push_back(info.edge_list_per_day[day1][idx1]);
+    //         edge_list2.push_back(info.edge_list_per_day[day2][idx2]);
+    //         info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
+    //         info.edge_list_per_day[day2].erase(info.edge_list_per_day[day2].begin() + idx2);
+    //     }
+    //     rep(i, num) {
+    //         info.edge_list_per_day[day1].push_back(edge_list2[i]);
+    //         info.edge_list_per_day[day2].push_back(edge_list1[i]);
+    //     }
 
-        ll before_day1_edge1_score = 0;
-        rep(i, num) {
-            before_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
-            before_day1_edge1_score += evaluate_score(day1, edge_list2[i].from);
-        }
-        ll before_day1_edge2_score = 0;
-        rep(i, num) {
-            before_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
-            before_day1_edge2_score += evaluate_score(day1, edge_list2[i].to);
-        }
-        ll before_day1_score = before_day1_edge1_score + before_day1_edge2_score;
+    //     ll before_day1_edge1_score = 0;
+    //     rep(i, num) {
+    //         before_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
+    //         before_day1_edge1_score += evaluate_score(day1, edge_list2[i].from);
+    //     }
+    //     ll before_day1_edge2_score = 0;
+    //     rep(i, num) {
+    //         before_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
+    //         before_day1_edge2_score += evaluate_score(day1, edge_list2[i].to);
+    //     }
+    //     ll before_day1_score = before_day1_edge1_score + before_day1_edge2_score;
 
-        ll before_day2_edge1_score = 0;
-        rep(i, num) {
-            before_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
-            before_day2_edge1_score += evaluate_score(day2, edge_list2[i].from);
-        }
-        ll before_day2_edge2_score = 0;
-        rep(i, num) {
-            before_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
-            before_day2_edge2_score += evaluate_score(day2, edge_list2[i].to);
-        }
-        ll before_day2_score = before_day2_edge1_score + before_day2_edge2_score;
+    //     ll before_day2_edge1_score = 0;
+    //     rep(i, num) {
+    //         before_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
+    //         before_day2_edge1_score += evaluate_score(day2, edge_list2[i].from);
+    //     }
+    //     ll before_day2_edge2_score = 0;
+    //     rep(i, num) {
+    //         before_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
+    //         before_day2_edge2_score += evaluate_score(day2, edge_list2[i].to);
+    //     }
+    //     ll before_day2_score = before_day2_edge1_score + before_day2_edge2_score;
 
-        rep(i, num) info.construction_day_list[edge_list1[i].edge_id] = day2;
-        rep(i, num) info.construction_day_list[edge_list2[i].edge_id] = day1;
+    //     rep(i, num) info.construction_day_list[edge_list1[i].edge_id] = day2;
+    //     rep(i, num) info.construction_day_list[edge_list2[i].edge_id] = day1;
 
-        ll after_day1_edge1_score = 0;
-        rep(i, num) {
-            after_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
-            after_day1_edge1_score += evaluate_score(day1, edge_list2[i].from);
-        }
-        ll after_day1_edge2_score = 0;
-        rep(i, num) {
-            after_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
-            after_day1_edge2_score += evaluate_score(day1, edge_list2[i].to);
-        }
-        ll after_day1_score = after_day1_edge1_score + after_day1_edge2_score;
+    //     ll after_day1_edge1_score = 0;
+    //     rep(i, num) {
+    //         after_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
+    //         after_day1_edge1_score += evaluate_score(day1, edge_list2[i].from);
+    //     }
+    //     ll after_day1_edge2_score = 0;
+    //     rep(i, num) {
+    //         after_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
+    //         after_day1_edge2_score += evaluate_score(day1, edge_list2[i].to);
+    //     }
+    //     ll after_day1_score = after_day1_edge1_score + after_day1_edge2_score;
 
-        ll after_day2_edge1_score = 0;
-        rep(i, num) {
-            after_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
-            after_day2_edge1_score += evaluate_score(day2, edge_list2[i].from);
-        }
-        ll after_day2_edge2_score = 0;
-        rep(i, num) {
-            after_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
-            after_day2_edge2_score += evaluate_score(day2, edge_list2[i].to);
-        }
-        ll after_day2_score = after_day2_edge1_score + after_day2_edge2_score;
+    //     ll after_day2_edge1_score = 0;
+    //     rep(i, num) {
+    //         after_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
+    //         after_day2_edge1_score += evaluate_score(day2, edge_list2[i].from);
+    //     }
+    //     ll after_day2_edge2_score = 0;
+    //     rep(i, num) {
+    //         after_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
+    //         after_day2_edge2_score += evaluate_score(day2, edge_list2[i].to);
+    //     }
+    //     ll after_day2_score = after_day2_edge1_score + after_day2_edge2_score;
 
-        // 工事日を変更してスコアが悪化する場合
-        if(after_day1_score + after_day2_score >= before_day1_score + before_day2_score) {
-            swap(info, sub_info);
-            return Failed;
-        }
-        // 成功
-        return OK;
-    }
+    //     // 工事日を変更してスコアが悪化する場合
+    //     if(after_day1_score + after_day2_score >= before_day1_score + before_day2_score) {
+    //         swap(info, sub_info);
+    //         return Failed;
+    //     }
+    //     // 成功
+    //     return OK;
+    // }
     
 
-    Response edge_move(ll day1, ll day2, ll num=1) {
+    Response edge_move(ll day1, ll day2) {
         if(day1 == day2) return Failed;
+        ll num = 1;
         num = min(num, (ll)info.edge_list_per_day[day1].size());
         num = min(num, (ll)(K - info.edge_list_per_day[day2].size()));
         if(num == 0) return Failed;
         Info sub_info = info;
         swap(info, sub_info);
-        vector<Edge> edge_list1;
-        vector<pll> tmp_pll;
-        rep(i, info.edge_list_per_day[day1].size()) {
-            tmp_pll.push_back(pll(info.edge_list_per_day[day1][i].cost, i));
-        }
-        // sort(tmp_pll.begin(), tmp_pll.end());                 // コストが大きいものを優先的に
-        // sort(tmp_pll.begin(), tmp_pll.end(), greater<pll>()); // コストが小さいものを優先的に
-        // rep(i, num) {
-        //     ll idx1 = tmp_pll[(ll)sqrt(rand()%(info.edge_list_per_day[day1].size() * info.edge_list_per_day[day1].size()))].second;
-        //     edge_list1.push_back(info.edge_list_per_day[day1][idx1]);
-        //     info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
-        // }
+        ll idx1 = rand()%info.edge_list_per_day[day1].size();
+        Edge edge = info.edge_list_per_day[day1][idx1];
+        info.edge_list_per_day[day2].push_back(edge);
+        info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
 
-        rep(i, num) {
-            ll idx1 = rand()%info.edge_list_per_day[day1].size();
-            edge_list1.push_back(info.edge_list_per_day[day1][idx1]);
-            info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
-        }
-
-        rep(i, num) {
-            info.edge_list_per_day[day2].push_back(edge_list1[i]);
-        }
-
-        ll before_day1_edge1_score = 0;
-        rep(i, num) before_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
-        ll before_day1_edge2_score = 0;
-        rep(i, num) before_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
+        ll before_day1_edge1_score = evaluate_score(day1, edge.from);
+        ll before_day1_edge2_score = evaluate_score(day1, edge.to);
         ll before_day1_score = before_day1_edge1_score + before_day1_edge2_score;
 
-        ll before_day2_edge1_score = 0;
-        rep(i, num) before_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
-        ll before_day2_edge2_score = 0;
-        rep(i, num) before_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
+        ll before_day2_edge1_score = evaluate_score(day2, edge.from);
+        ll before_day2_edge2_score = evaluate_score(day2, edge.to);
         ll before_day2_score = before_day2_edge1_score + before_day2_edge2_score;
 
-        rep(i, num) info.construction_day_list[edge_list1[i].edge_id] = day2;
+        info.construction_day_list[edge.edge_id] = day2;
 
-        ll after_day1_edge1_score = 0;
-        rep(i, num) after_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
-        ll after_day1_edge2_score = 0;
-        rep(i, num) after_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
+        ll after_day1_edge1_score = evaluate_score(day1, edge.from);
+        ll after_day1_edge2_score = evaluate_score(day1, edge.to);
         ll after_day1_score = after_day1_edge1_score + after_day1_edge2_score;
 
-        ll after_day2_edge1_score = 0;
-        rep(i, num) after_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
-        ll after_day2_edge2_score = 0;
-        rep(i, num) after_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
+        ll after_day2_edge1_score = evaluate_score(day2, edge.from);
+        ll after_day2_edge2_score = evaluate_score(day2, edge.to);
         ll after_day2_score = after_day2_edge1_score + after_day2_edge2_score;
         
-        
-        // 工事日を移動してスコアが悪化する場合
-        if(after_day1_score + after_day2_score >= before_day1_score + before_day2_score) {
-            swap(info, sub_info);
-            return Failed;
+        ll score = (before_day1_score + before_day2_score) - (after_day1_score + after_day2_score);
+        if(score >= 0) {
+            // 成功
+            return OK;
+        }else {
+            // ll prob = exp((ld)score / temp) * 100;
+            // if(prob > rand()%100) {
+            //     // 多少悪化しても許容
+            //     return OK;
+            // }else {
+                // 工事日を移動してスコアが悪化する場合
+                swap(info, sub_info);
+                return Failed;
+            // }
+           
         }
-        // 成功
-        return OK;
+        
     }
-    
     
 
     ll compute_score() { // O(DNMlogN) = 30 * 1000 * 3000 * 7 = 6*10**8 = 6000ms
@@ -569,11 +552,14 @@ int main() {
     Score score = Score(construction_day_list, edge_list);
     ll cnt = 0;
     ll ok_cnt = 0;
+    ll start_temp = 1000000;
+    ll end_temp = 10;
     
     while(true) {
         clock_t end = clock();
         if((ld)(end - start) / CLOCKS_PER_SEC > limit) break;
-        
+        // ld time = (ld)(end - start) / CLOCKS_PER_SEC;
+        // ld temp = start_temp + (end_temp - start_temp) * (ld)time / limit;
         if(penalty_edge_list.size() > 0) {
             ll penalty_edge_idx = rand()%penalty_edge_list.size();
             ll tmp_after_day = (rand()%D) + 1;
@@ -591,11 +577,11 @@ int main() {
             ll day2 = (rand()%D) + 1;
 
             Response response;
-            if(rand()%100 < 100) {
-                response = score.edge_move(day1, day2);
-            }else {
-                response = score.edge_swap(day1, day2);
-            }
+            // if(rand()%100 < 100) {
+            response = score.edge_move(day1, day2);
+            // }else {
+            //     response = score.edge_swap(day1, day2);
+            // }
             cnt++;
             if(response == OK) {
                 ok_cnt++;
