@@ -336,32 +336,55 @@ struct Score {
             info.edge_list_per_day[day2].push_back(edge_list1[i]);
         }
 
-
         ll before_day1_edge1_score = 0;
-        rep(i, num) before_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
+        rep(i, num) {
+            before_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
+            before_day1_edge1_score += evaluate_score(day1, edge_list2[i].from);
+        }
         ll before_day1_edge2_score = 0;
-        rep(i, num) before_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
+        rep(i, num) {
+            before_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
+            before_day1_edge2_score += evaluate_score(day1, edge_list2[i].to);
+        }
         ll before_day1_score = before_day1_edge1_score + before_day1_edge2_score;
 
         ll before_day2_edge1_score = 0;
-        rep(i, num) before_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
+        rep(i, num) {
+            before_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
+            before_day2_edge1_score += evaluate_score(day2, edge_list2[i].from);
+        }
         ll before_day2_edge2_score = 0;
-        rep(i, num) before_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
+        rep(i, num) {
+            before_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
+            before_day2_edge2_score += evaluate_score(day2, edge_list2[i].to);
+        }
         ll before_day2_score = before_day2_edge1_score + before_day2_edge2_score;
 
         rep(i, num) info.construction_day_list[edge_list1[i].edge_id] = day2;
         rep(i, num) info.construction_day_list[edge_list2[i].edge_id] = day1;
 
         ll after_day1_edge1_score = 0;
-        rep(i, num) after_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
+        rep(i, num) {
+            after_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
+            after_day1_edge1_score += evaluate_score(day1, edge_list2[i].from);
+        }
         ll after_day1_edge2_score = 0;
-        rep(i, num) after_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
+        rep(i, num) {
+            after_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
+            after_day1_edge2_score += evaluate_score(day1, edge_list2[i].to);
+        }
         ll after_day1_score = after_day1_edge1_score + after_day1_edge2_score;
 
         ll after_day2_edge1_score = 0;
-        rep(i, num) after_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
+        rep(i, num) {
+            after_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
+            after_day2_edge1_score += evaluate_score(day2, edge_list2[i].from);
+        }
         ll after_day2_edge2_score = 0;
-        rep(i, num) after_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
+        rep(i, num) {
+            after_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
+            after_day2_edge2_score += evaluate_score(day2, edge_list2[i].to);
+        }
         ll after_day2_score = after_day2_edge1_score + after_day2_edge2_score;
 
         // 工事日を変更してスコアが悪化する場合
@@ -560,7 +583,7 @@ int main() {
             ll day2 = (rand()%D) + 1;
 
             Response response;
-            if(rand()%100 < 100) {
+            if(rand()%100 < 0) {
                 response = score.edge_move(day1, day2);
             }else {
                 response = score.edge_swap(day1, day2);
