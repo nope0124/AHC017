@@ -398,11 +398,24 @@ struct Score {
         Info sub_info = info;
         swap(info, sub_info);
         vector<Edge> edge_list1;
+        vector<pll> tmp_pll;
+        rep(i, info.edge_list_per_day[day1].size()) {
+            tmp_pll.push_back(pll(info.edge_list_per_day[day1][i].cost, i));
+        }
+        // sort(tmp_pll.begin(), tmp_pll.end());                 // コストが大きいものを優先的に
+        // sort(tmp_pll.begin(), tmp_pll.end(), greater<pll>()); // コストが小さいものを優先的に
+        // rep(i, num) {
+        //     ll idx1 = tmp_pll[(ll)sqrt(rand()%(info.edge_list_per_day[day1].size() * info.edge_list_per_day[day1].size()))].second;
+        //     edge_list1.push_back(info.edge_list_per_day[day1][idx1]);
+        //     info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
+        // }
+
         rep(i, num) {
             ll idx1 = rand()%info.edge_list_per_day[day1].size();
             edge_list1.push_back(info.edge_list_per_day[day1][idx1]);
             info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
         }
+
         rep(i, num) {
             info.edge_list_per_day[day2].push_back(edge_list1[i]);
         }
@@ -500,7 +513,7 @@ int main() {
     }
 
     // 初期状態のconstruction_day_listを作成
-    sort(edge_list.begin(), edge_list.end());
+    // sort(edge_list.begin(), edge_list.end());
     for(ll d = 0; d < D; d++) {
         UnionFind uf = UnionFind(N);
         
@@ -555,6 +568,7 @@ int main() {
 
     Score score = Score(construction_day_list, edge_list);
     ll cnt = 0;
+    ll ok_cnt = 0;
     
     while(true) {
         clock_t end = clock();
@@ -582,8 +596,9 @@ int main() {
             }else {
                 response = score.edge_swap(day1, day2);
             }
+            cnt++;
             if(response == OK) {
-                cnt++;
+                ok_cnt++;
                 // if(cnt % 10 == 0) {
                 //     cerr << score.compute_score() << endl;
                 // }
@@ -602,8 +617,10 @@ int main() {
     score.info.dump();
     // 注意点、入れ替え実装できていないから本番2000ケースで落ちる可能性高い
     // day=5とか危ない、普通にバカ重い
-    cerr << cnt << endl;
-    cerr << score.compute_score() << endl;
+    
+    // cerr << score.compute_score() << endl;
+    // cerr << cnt << endl;
+    // cerr << ok_cnt << endl;
     // for(ll i = 0; i < D; i++) {
     //     cerr << construction_vacant_count_per_day[i] << " \n"[i == D - 1];
     // }
