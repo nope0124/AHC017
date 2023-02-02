@@ -77,11 +77,11 @@ struct Dijkstra {
     public:
         vector<ll> dist;
         
-        Dijkstra(vector<Edge> edge_list, bool is_directed=false) {
+        Dijkstra(vector<Edge> edge_list, vector<ll> construction_day_list, ll day) {
             for(ll i = 0; i < edge_list.size(); i++) {
-                if(edge_list[i].edge_id <= -1) continue;
+                if(construction_day_list[edge_list[i].edge_id] == day) continue;
                 graph[edge_list[i].from].push_back(Dijkstra_Edge(edge_list[i].to, edge_list[i].cost));
-                if(is_directed == false) graph[edge_list[i].to].push_back(Dijkstra_Edge(edge_list[i].from, edge_list[i].cost));
+                graph[edge_list[i].to].push_back(Dijkstra_Edge(edge_list[i].from, edge_list[i].cost));
             }
             for(ll i = 0; i < N; i++) dist.push_back(1000000000);
         }
@@ -228,33 +228,26 @@ struct Score {
         edge_list = _edge_list;
         info.construction_day_list = _construction_day_list;
         rep(i, M) info.edge_list_per_day[info.construction_day_list[edge_list[i].edge_id]].push_back(edge_list[i]);
-        // vector<vector<ll> > _scores(D + 1, vector<ll>(N, INF));
-        // for(int d = 0; d < D + 1; d++) {
-        //     for(int i = 0; i < N; i++) {
-        //         _scores[d][i] = evaluate_score(d, i);
-        //     }
-        // }
-        // info.scores = _scores;
         penalty_count = 0;
     }
 
     vector<ll> compute_dist_vector(ll day) { // O(MlogN) = 3000 * 7 = 2*10**4 = 0.2ms
-        vector<Edge> new_edge_list;
-        for(ll i = 0; i < M; i++) {
-            if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
-            new_edge_list.push_back(edge_list[i]);
-        }
-        Dijkstra djk = Dijkstra(new_edge_list);
+        // vector<Edge> new_edge_list;
+        // for(ll i = 0; i < M; i++) {
+        //     if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
+        //     new_edge_list.push_back(edge_list[i]);
+        // }
+        Dijkstra djk = Dijkstra(edge_list, info.construction_day_list, day);
         return djk.get_dist(day);
     }
 
     vector<vector<ll> > compute_dist_matrix(ll day) { // O(NMlogN) = 1000 * 3000 * 7 = 2*10**7 = 200ms
-        vector<Edge> new_edge_list;
-        for(ll i = 0; i < M; i++) {
-            if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
-            new_edge_list.push_back(edge_list[i]);
-        }
-        Dijkstra djk = Dijkstra(new_edge_list);
+        // vector<Edge> new_edge_list;
+        // for(ll i = 0; i < M; i++) {
+        //     if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
+        //     new_edge_list.push_back(edge_list[i]);
+        // }
+        Dijkstra djk = Dijkstra(edge_list, info.construction_day_list, day);
         vector<vector<ll> > tmp_dist;
         for(ll s = 0; s < N; s++) {
             tmp_dist.push_back(djk.get_dist(s));
@@ -303,12 +296,12 @@ struct Score {
     }
 
     ll evaluate_score(ll day, ll s) { // O(M * logN) = O(30000) 
-        vector<Edge> new_edge_list;
-        for(ll i = 0; i < M; i++) {
-            if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
-            new_edge_list.push_back(edge_list[i]);
-        }
-        Dijkstra djk = Dijkstra(new_edge_list);
+        // vector<Edge> new_edge_list;
+        // for(ll i = 0; i < M; i++) {
+        //     if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
+        //     new_edge_list.push_back(edge_list[i]);
+        // }
+        Dijkstra djk = Dijkstra(edge_list, info.construction_day_list, day);
         vector<ll> tmp_dist = djk.get_dist(s);
         ll score = 0;
         rep(i, N) score += tmp_dist[i];
@@ -573,17 +566,18 @@ int main() {
             Response response = score.delete_penalty(penalty_edge_list[penalty_edge_idx], tmp_after_day);
             if(response == OK) {
                 penalty_edge_list.erase(penalty_edge_list.begin() + penalty_edge_idx);
-            }else if(response == Penalty) {
-            }else if(response == Failed) {
-            }else if(response == FatalError) {
-                return 0;
             }
+            // else if(response == Penalty) {
+            // }else if(response == Failed) {
+            // }else if(response == FatalError) {
+            //     return 0;
+            // }
         }else {
             ll day1 = (rand()%D) + 1;
             ll day2 = (rand()%D) + 1;
 
             Response response;
-            if(rand()%100 < 0) {
+            if(rand()%100 < 100) {
                 response = score.edge_move(day1, day2);
             }else {
                 response = score.edge_swap(day1, day2);
@@ -593,11 +587,12 @@ int main() {
                 // if(cnt % 10 == 0) {
                 //     cerr << score.compute_score() << endl;
                 // }
-            }else if(response == Penalty) {
-            }else if(response == Failed) {
-            }else if(response == FatalError) {
-                return 0;
             }
+            // else if(response == Penalty) {
+            // }else if(response == Failed) {
+            // }else if(response == FatalError) {
+            //     return 0;
+            // }
         }
         
     }
@@ -607,7 +602,7 @@ int main() {
     score.info.dump();
     // 注意点、入れ替え実装できていないから本番2000ケースで落ちる可能性高い
     // day=5とか危ない、普通にバカ重い
-    // cerr << cnt << endl;
+    cerr << cnt << endl;
     cerr << score.compute_score() << endl;
     // for(ll i = 0; i < D; i++) {
     //     cerr << construction_vacant_count_per_day[i] << " \n"[i == D - 1];
