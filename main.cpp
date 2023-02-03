@@ -21,7 +21,7 @@ typedef enum {
 } Response;
 
 ll N, M, D, K;
-ld limit = 5.0;
+ld limit = 3.0;
 const ll INF = 1e18;
 
 struct Edge {
@@ -390,17 +390,18 @@ struct Score {
     // }
     
 
-    Response edge_move(ll day1, ll day2) {
-        if(day1 == day2) return Failed;
+    Response edge_move(ll day1, ll day2, ll day3) {
+        if(day1 == day2 || day2 == day3) return Failed;
         ll num = 1;
         num = min(num, (ll)info.edge_list_per_day[day1].size());
         num = min(num, (ll)(K - info.edge_list_per_day[day2].size()));
+        num = min(num, (ll)(K - info.edge_list_per_day[day3].size()));
         if(num == 0) return Failed;
         Info sub_info = info;
         swap(info, sub_info);
         ll idx1 = rand()%info.edge_list_per_day[day1].size();
         Edge edge = info.edge_list_per_day[day1][idx1];
-        info.edge_list_per_day[day2].push_back(edge);
+        // info.edge_list_per_day[day2].push_back(edge);
         info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
 
         ll before_day1_edge1_score = evaluate_score(day1, edge.from);
@@ -410,18 +411,41 @@ struct Score {
         ll before_day2_edge1_score = evaluate_score(day2, edge.from);
         ll before_day2_edge2_score = evaluate_score(day2, edge.to);
         ll before_day2_score = before_day2_edge1_score + before_day2_edge2_score;
+        
+        ll before_day3_edge1_score = evaluate_score(day3, edge.from);
+        ll before_day3_edge2_score = evaluate_score(day3, edge.to);
+        ll before_day3_score = before_day3_edge1_score + before_day3_edge2_score;
 
-        info.construction_day_list[edge.edge_id] = day2;
+        info.construction_day_list[edge.edge_id] = 0;
 
         ll after_day1_edge1_score = evaluate_score(day1, edge.from);
         ll after_day1_edge2_score = evaluate_score(day1, edge.to);
         ll after_day1_score = after_day1_edge1_score + after_day1_edge2_score;
 
+        info.construction_day_list[edge.edge_id] = day2;
+
         ll after_day2_edge1_score = evaluate_score(day2, edge.from);
         ll after_day2_edge2_score = evaluate_score(day2, edge.to);
         ll after_day2_score = after_day2_edge1_score + after_day2_edge2_score;
         
-        ll score = (before_day1_score + before_day2_score) - (after_day1_score + after_day2_score);
+        info.construction_day_list[edge.edge_id] = day3;
+
+        ll after_day3_edge1_score = evaluate_score(day3, edge.from);
+        ll after_day3_edge2_score = evaluate_score(day3, edge.to);
+        ll after_day3_score = after_day3_edge1_score + after_day3_edge2_score;
+
+        ll score_day2 = (before_day1_score + before_day2_score) - (after_day1_score + after_day2_score);
+        ll score_day3 = (before_day1_score + before_day3_score) - (after_day1_score + after_day3_score);
+        ll score = 0;
+        if(score_day2 >= score_day3) {
+            info.construction_day_list[edge.edge_id] = day2;
+            info.edge_list_per_day[day2].push_back(edge);
+            score = score_day2;
+        }else {
+            info.construction_day_list[edge.edge_id] = day3;
+            info.edge_list_per_day[day3].push_back(edge);
+            score = score_day3;
+        }
         if(score >= 0) {
             // 成功
             return OK;
@@ -575,10 +599,11 @@ int main() {
         }else {
             ll day1 = (rand()%D) + 1;
             ll day2 = (rand()%D) + 1;
+            ll day3 = (rand()%D) + 1;
 
             Response response;
             // if(rand()%100 < 100) {
-            response = score.edge_move(day1, day2);
+            response = score.edge_move(day1, day2, day3);
             // }else {
             //     response = score.edge_swap(day1, day2);
             // }
@@ -604,7 +629,7 @@ int main() {
     // 注意点、入れ替え実装できていないから本番2000ケースで落ちる可能性高い
     // day=5とか危ない、普通にバカ重い
     
-    // cerr << score.compute_score() << endl;
+    cerr << score.compute_score() << endl;
     // cerr << cnt << endl;
     // cerr << ok_cnt << endl;
     // for(ll i = 0; i < D; i++) {
