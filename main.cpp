@@ -1,13 +1,10 @@
 #include <bits/stdc++.h>
 #include <random>
-#include <time.h>
 using namespace std;
+#define rep(i, N) for(int i = 0; i < (int)N; i++)
+#define IOS ios::sync_with_stdio(0); cin.tie(0); cout.tie(0);
 typedef long long int ll;
 typedef long double ld;
-typedef pair<ll, ll> pll;
-#define rep(i, N) for(ll i = 0; i < (ll)N; i++)
-#define IOS ios::sync_with_stdio(0); cin.tie(0); cout.tie(0);
-
 
 
 typedef enum {
@@ -23,8 +20,8 @@ typedef enum {
     Penalty,   // ペナルティが残っている
 } Response;
 
-ll N, M, D, K;
-ld limit = 3.0;
+short N, M, D, K;
+ld limit = 5.7;
 const ll INF = 1e18;
 
 struct Edge {
@@ -62,8 +59,6 @@ struct Edge {
         return os;
     }
 };
-
-
 
 
 
@@ -224,24 +219,25 @@ vector<T> dijkstra(StaticGraph<T>& g, int start = 0) {
 
 
 
+
 struct UnionFind {
     private:
-        vector<ll> parent;
+        vector<int> parent;
     
     public:
-        UnionFind(ll n) : parent(n, -1) { }
-        void init(ll n) { parent.assign(n, -1); }
+        UnionFind(int n) : parent(n, -1) { }
+        void init(int n) { parent.assign(n, -1); }
     
-        ll root(ll x) {
+        int root(int x) {
             if(parent[x] < 0) return x;
             else return parent[x] = root(parent[x]);
         }
     
-        bool issame(ll x, ll y) {
+        bool issame(int x, int y) {
             return root(x) == root(y);
         }
     
-        void merge(ll x, ll y) { //親、子
+        void merge(int x, int y) { //親、子
             x = root(x);
             y = root(y);
             if(x == y) return;
@@ -250,7 +246,7 @@ struct UnionFind {
             parent[y] = x; // 大きい木の根に小さい木をつける, yの親はx
         }
         
-        ll size(ll x) {
+        int size(int x) {
             return -parent[root(x)];
         }
 
@@ -258,10 +254,9 @@ struct UnionFind {
 
 
 template <typename T> vector<T> random_sample(vector<T> population, int k) {
-    if((ll)population.size() < k) {
+    if(population.size() < k) {
         return population;
     }
-   // int num = population.size() - k;
     vector<T> ret_population;
     for(int i = 0; i < k; i++) {
         int idx = rand()%population.size();
@@ -275,7 +270,6 @@ template <typename T> vector<T> random_sample(vector<T> population, int k) {
 
 struct Info {
     vector<short> construction_day_list;
-    
     vector<Edge> edge_list_per_day[31];
 
     void dump() {
@@ -332,15 +326,12 @@ struct Score {
     }
 
     ll evaluate_score(short day, short s1, short s2) { // O(MlogN) = O(30000) 
-        vector<Edge> new_edge_list;
+      	short graph_size = M - info.edge_list_per_day[day].size();
+        StaticGraph<ll> g(N, graph_size*2);
         for(short i = 0; i < M; i++) {
             if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
-            new_edge_list.push_back(edge_list[i]);
-        }
-        StaticGraph<ll> g(N, (ll)new_edge_list.size()*2);
-        for(short i = 0; i < (ll)new_edge_list.size(); i++) {
-            g.add_edge(new_edge_list[i].from, new_edge_list[i].to, new_edge_list[i].cost);
-            g.add_edge(new_edge_list[i].to, new_edge_list[i].from, new_edge_list[i].cost);
+            g.add_edge(edge_list[i].from, edge_list[i].to, edge_list[i].cost);
+            g.add_edge(edge_list[i].to, edge_list[i].from, edge_list[i].cost);
         }
         vector<ll> tmp_dist = dijkstra(g, s1);
         ll score = 0;
@@ -390,8 +381,6 @@ struct Score {
         }
     }
 
-    
-    
 
     Response edge_move(ll day1, ll day2) {
         if(day1 == day2) return Failed;
@@ -403,14 +392,15 @@ struct Score {
         swap(info, sub_info);
         ll idx1 = rand()%info.edge_list_per_day[day1].size();
         Edge edge = info.edge_list_per_day[day1][idx1];
-        info.edge_list_per_day[day2].push_back(edge);
-        info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
+        
 
         ll before_day1_score = evaluate_score(day1, edge.from, edge.to);
 
         ll before_day2_score = evaluate_score(day2, edge.from, edge.to);
 
         info.construction_day_list[edge.edge_id] = day2;
+        info.edge_list_per_day[day2].push_back(edge);
+        info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
 
         ll after_day1_score = evaluate_score(day1, edge.from, edge.to);
 
@@ -470,7 +460,6 @@ struct Score {
 
 int main() {
     clock_t start = clock();
-    IOS;
     cin >> N >> M >> D >> K;
     vector<Edge> edge_list(M);
     vector<short> construction_day_list(M);
@@ -508,7 +497,7 @@ int main() {
             unconstructed_edge_list.push_back(&edge_list[i]);
         }
 
-        unconstructed_edge_list = random_sample(unconstructed_edge_list, min((ll)unconstructed_edge_list.size(), (M + D - 1) / D));
+        unconstructed_edge_list = random_sample(unconstructed_edge_list, min((int)unconstructed_edge_list.size(), (M + D - 1) / D));
         // 工事日を確定
         for(ll i = 0; i < unconstructed_edge_list.size(); i++) {
             unconstructed_edge_list[i]->road_status = Constructed;
@@ -563,9 +552,8 @@ int main() {
     }
 
     score.info.dump();
+  	
     
-    cerr << score.compute_score() << endl;
-    cerr << cnt << endl;
-    cerr << ok_cnt << endl;
+    
 
 }
