@@ -1,3 +1,5 @@
+#pragma GCC target("sse,sse2,sse3,ssse3,sse4,fma,abm,mmx,avx,avx2")
+
 #include <bits/stdc++.h>
 #include <random>
 using namespace std;
@@ -22,7 +24,7 @@ typedef enum {
 
 short N, M, D, K;
 ld limit = 5.7;
-const ll INF = 1e18;
+constexpr ll INF = 1e18;
 
 struct Edge {
     short edge_id;
@@ -208,6 +210,29 @@ vector<T> dijkstra(StaticGraph<T>& g, int start = 0) {
 
 
 
+template <typename T>
+ll dijkstra_get_score(StaticGraph<T>& g, int start = 0) {
+    ll score = 0;
+    vector<T> d(g.size(), T(1000000000));
+    RadixHeap<T, int> Q;
+    d[start] = 0;
+    Q.push(0, start);
+    while (!Q.empty()) {
+        auto p = Q.pop();
+        int u = p.second;
+        if (d[u] < T(p.first)) continue;
+        T du = d[u];
+        for (auto&& [v, c] : g[u]) {
+            if (d[v] == T(1000000000) || du + c < d[v]) {
+                d[v] = du + c;
+                Q.push(d[v], v);
+            }
+        }
+    }
+    rep(i, N) score += d[i];
+    return score;
+}
+
 
 
 
@@ -293,32 +318,26 @@ struct Score {
         penalty_count = 0;
     }
 
-    vector<ll> compute_dist_vector(short day) { // O(MlogN) = 3000 * 7 = 2*10**4 = 0.2ms
-        vector<Edge> new_edge_list;
-        for(short i = 0; i < M; i++) {
-            if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
-            new_edge_list.push_back(edge_list[i]);
-        }
-        StaticGraph<ll> g(N, (ll)new_edge_list.size()*2);
-        rep(i, (ll)new_edge_list.size()) {
-            g.add_edge(new_edge_list[i].from, new_edge_list[i].to, new_edge_list[i].cost);
-            g.add_edge(new_edge_list[i].to, new_edge_list[i].from, new_edge_list[i].cost);
+    vector<int> compute_dist_vector(short day) { // O(MlogN) = 3000 * 7 = 2*10**4 = 0.2ms
+        short graph_size = M - info.edge_list_per_day[day].size();
+        StaticGraph<int> g(N, graph_size*2);
+        rep(i, M) {
+          	if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
+            g.add_edge(edge_list[i].from, edge_list[i].to, edge_list[i].cost);
+            g.add_edge(edge_list[i].to, edge_list[i].from, edge_list[i].cost);
         }
         return dijkstra(g, day);
     }
 
-    vector<vector<ll> > compute_dist_matrix(ll day) { // O(NMlogN) = 1000 * 3000 * 7 = 2*10**7 = 200ms
-        vector<Edge> new_edge_list;
-        for(short i = 0; i < M; i++) {
-            if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
-            new_edge_list.push_back(edge_list[i]);
+    vector<vector<int> > compute_dist_matrix(short day) { // O(NMlogN) = 1000 * 3000 * 7 = 2*10**7 = 200ms
+        short graph_size = M - info.edge_list_per_day[day].size();
+        StaticGraph<int> g(N, graph_size*2);
+        rep(i, M) {
+          	if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
+            g.add_edge(edge_list[i].from, edge_list[i].to, edge_list[i].cost);
+            g.add_edge(edge_list[i].to, edge_list[i].from, edge_list[i].cost);
         }
-        StaticGraph<ll> g(N, (ll)new_edge_list.size()*2);
-        rep(i, (ll)new_edge_list.size()) {
-            g.add_edge(new_edge_list[i].from, new_edge_list[i].to, new_edge_list[i].cost);
-            g.add_edge(new_edge_list[i].to, new_edge_list[i].from, new_edge_list[i].cost);
-        }
-        vector<vector<ll> > tmp_dist;
+        vector<vector<int> > tmp_dist;
         for(ll s = 0; s < N; s++) {
             tmp_dist.push_back(dijkstra(g, s));
         }
@@ -327,28 +346,25 @@ struct Score {
 
     ll evaluate_score(short day, short s1, short s2) { // O(MlogN) = O(30000) 
       	short graph_size = M - info.edge_list_per_day[day].size();
-        StaticGraph<ll> g(N, graph_size*2);
+        StaticGraph<int> g(N, graph_size*2);
         for(short i = 0; i < M; i++) {
             if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
             g.add_edge(edge_list[i].from, edge_list[i].to, edge_list[i].cost);
             g.add_edge(edge_list[i].to, edge_list[i].from, edge_list[i].cost);
         }
-        vector<ll> tmp_dist = dijkstra(g, s1);
-        ll score = 0;
-        rep(i, N) score += tmp_dist[i];
-        tmp_dist = dijkstra(g, s2);
-        rep(i, N) score += tmp_dist[i];
+
+        ll score = dijkstra_get_score(g, s1);
+      	score += dijkstra_get_score(g, s2);
         return score;
     }
 
 
     Response delete_penalty(Edge edge, ll to_day) {
-        vector<ll> dist_from_day, dist_to_day;
         ll from_day = info.construction_day_list[edge.edge_id]; // 現在の工事日を把握
         if(from_day == to_day) return Failed;
         ll before_penalty_count = 0;
-        dist_from_day = compute_dist_vector(from_day);
-        dist_to_day   = compute_dist_vector(to_day);
+        vector<int> dist_from_day = compute_dist_vector(from_day);
+        vector<int> dist_to_day   = compute_dist_vector(to_day);
         for(ll i = 0; i < N; i++) if(dist_from_day[i] == 1000000000) before_penalty_count++;
         for(ll i = 0; i < N; i++) if(dist_to_day[i]   == 1000000000) before_penalty_count++;
         if(before_penalty_count == 0) return OK;
@@ -382,12 +398,12 @@ struct Score {
     }
 
 
-    Response edge_move(ll day1, ll day2) {
-        if(day1 == day2) return Failed;
+    void edge_move(ll day1, ll day2) {
+        if(day1 == day2) return;
         ll num = 1;
         num = min(num, (ll)info.edge_list_per_day[day1].size());
         num = min(num, (ll)(K - info.edge_list_per_day[day2].size()));
-        if(num == 0) return Failed;
+        if(num == 0) return;
         Info sub_info = info;
         swap(info, sub_info);
         ll idx1 = rand()%info.edge_list_per_day[day1].size();
@@ -409,11 +425,11 @@ struct Score {
         ll score = (before_day1_score + before_day2_score) - (after_day1_score + after_day2_score);
         if(score >= 0) {
             // 成功
-            return OK;
+            return;
         }else {
             // 工事日を移動してスコアが悪化する場合
             swap(info, sub_info);
-            return Failed;
+            return;
         }
         
     }
@@ -433,9 +449,9 @@ struct Score {
         }
         ll num = 0;
         vector<ll> fs;
-        vector<vector<ll> > dist0 = compute_dist_matrix(0);
+        vector<vector<int> > dist0 = compute_dist_matrix(0);
         for(ll d = 1; d <= D; d++) {
-            vector<vector<ll> > dist = compute_dist_matrix(d);
+            vector<vector<int> > dist = compute_dist_matrix(d);
             ll tmp = 0;
             for(ll i = 0; i < N; i++) {
                 for(ll j = i + 1; j < N; j++) {
@@ -542,11 +558,8 @@ int main() {
             ll day1 = (rand()%D) + 1;
             ll day2 = (rand()%D) + 1;
 
-            Response response = score.edge_move(day1, day2);
-            cnt++;
-            if(response == OK) {
-                ok_cnt++;
-            }
+            score.edge_move(day1, day2);
+            
         }
         
     }
