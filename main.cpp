@@ -1,12 +1,14 @@
 #include <bits/stdc++.h>
 #include <random>
-#include <array>
 #include <time.h>
 using namespace std;
-#define rep(i, N) for(ll i = 0; i < (ll)N; i++)
 typedef long long int ll;
 typedef long double ld;
 typedef pair<ll, ll> pll;
+#define rep(i, N) for(ll i = 0; i < (ll)N; i++)
+#define IOS ios::sync_with_stdio(0); cin.tie(0); cout.tie(0);
+
+
 
 typedef enum {
     Unconstructed, // 未工事状態
@@ -26,9 +28,9 @@ ld limit = 3.0;
 const ll INF = 1e18;
 
 struct Edge {
-    ll edge_id;
-    ll from;
-    ll to;
+    short edge_id;
+    short from;
+    short to;
     ll cost;
     Road_Status road_status = Unconstructed;
     bool operator==(const Edge& other) { return edge_id == other.edge_id; }
@@ -65,201 +67,149 @@ struct Edge {
 
 
 
+namespace StaticGraphImpl {
 
-
-
-
-template< typename T >
-struct RadixHeap
-{
-  using uint = unsigned;
-  vector< pair< uint, T > > v[33];
-  uint size, last;
-
-  RadixHeap() : size(0), last(0) {}
-
-  bool empty() const { return size == 0; }
-
-  inline int getbit(int a)
-  {
-    return a ? 32 - __builtin_clz(a) : 0;
-  }
-
-  void push(uint key, const T &value)
-  {
-    ++size;
-    v[getbit(key ^ last)].emplace_back(key, value);
-  }
-
-  pair< uint, T > pop()
-  {
-    if(v[0].empty()) {
-      int idx = 1;
-      while(v[idx].empty()) ++idx;
-      last = min_element(begin(v[idx]), end(v[idx]))->first;
-      for(auto &p : v[idx]) v[getbit(p.first ^ last)].emplace_back(p);
-      v[idx].clear();
-    }
-    --size;
-    auto ret = v[0].back();
-    v[0].pop_back();
-    return ret;
-  }
+template <typename T, bool Cond = is_void<T>::value>
+struct E;
+template <typename T>
+struct E<T, false> {
+    int to;
+    T cost;
+    E() {}
+    E(const int& v, const T& c) : to(v), cost(c) {}
+    operator int() const { return to; }
+};
+template <typename T>
+struct E<T, true> {
+    int to;
+    E() {}
+    E(const int& v) : to(v) {}
+    operator int() const { return to; }
 };
 
-
-struct Dijkstra {
+template <typename T = void>
+struct StaticGraph {
     private:
-        struct Dijkstra_Edge {
-            ll to;
-            ll cost;
-            Dijkstra_Edge(ll _to, ll _cost) {
-                to = _to;
-                cost = _cost;
-            }
-        };
-        vector<Dijkstra_Edge> graph[1010];
-        
-        ll score;
+    template <typename It>
+    struct Es {
+        It b, e;
+        It begin() const { return b; }
+        It end() const { return e; }
+        int size() const { return int(e - b); }
+        auto&& operator[](int i) const { return b[i]; }
+    };
+    
+    int N, M, ec;
+    vector<int> head;
+    vector<pair<int, E<T> > > buf;
+    vector<E<T> > es;
+
+    void build() {
+        partial_sum(begin(head), end(head), begin(head));
+        es.resize(M);
+        for (auto&& [u, e] : buf) es[--head[u]] = e;
+    }
 
     public:
-        vector<ll> dist;
-        
-        Dijkstra(vector<Edge> edge_list, vector<ll> construction_day_list, ll day) {
-            for(ll i = 0; i < (ll)edge_list.size(); i++) {
-                if(construction_day_list[edge_list[i].edge_id] == day) continue;
-                graph[edge_list[i].from].push_back(Dijkstra_Edge(edge_list[i].to, edge_list[i].cost));
-                graph[edge_list[i].to].push_back(Dijkstra_Edge(edge_list[i].from, edge_list[i].cost));
-            }
-            for(ll i = 0; i < N; i++) dist.push_back(1000000000);
-        }
-        
-        // vector<ll> get_dist(ll s) {
-        //     priority_queue<pll, vector<pll>, greater<pll> > que;
-        //     for(ll i = 0; i < N; i++) dist[i] = 1000000000;
-        //     dist[s] = 0;
-        //     que.push(pll(0, s));
-        //     while(!que.empty()){
-        //         pll p = que.top(); que.pop();
-        //         ll v = p.second;
-        //         if(dist[v] < p.first) continue;
-        //         for(Dijkstra_Edge e: graph[v]){
-        //             if(dist[e.to] > dist[v] + e.cost){
-        //                 dist[e.to] = dist[v] + e.cost;
-        //                 que.push(pll(dist[e.to], e.to));
-        //             }
-        //         }
-        //     }
-        //     return dist;
-        // }
+    StaticGraph(int _n, int _m) : N(_n), M(_m), ec(0), head(N + 1, 0) {
+        buf.reserve(M);
+    }
 
-        vector<ll> get_dist(ll s) {
-            RadixHeap<ll> que;
-            for(ll i = 0; i < N; i++) dist[i] = 1000000000;
-            dist[s] = 0;
-            que.push((ll)0, s);
-            while(!que.empty()){
-                auto p = que.pop();
-                ll u = p.second;
-                if(dist[u] < (ll)p.first) continue;
-                ll du = dist[u];
-                for(Dijkstra_Edge e: graph[u]) {
-                    if(dist[u] + e.cost < dist[e.to]) {
-                        dist[e.to] = du + e.cost;
-                        que.push(dist[e.to], e.to);
-                    }
-                }
-            }
-            return dist;
-            // priority_queue<pll, vector<pll>, greater<pll> > que;
-            // for(ll i = 0; i < N; i++) dist[i] = 1000000000;
-            // dist[s] = 0;
-            // que.push(pll(0, s));
-            // while(!que.empty()){
-            //     pll p = que.top(); que.pop();
-            //     ll v = p.second;
-            //     if(dist[v] < p.first) continue;
-            //     for(Dijkstra_Edge e: graph[v]){
-            //         if(dist[e.to] > dist[v] + e.cost){
-            //             dist[e.to] = dist[v] + e.cost;
-            //             que.push(pll(dist[e.to], e.to));
-            //         }
-            //     }
-            // }
-            // return dist;
-            // vector<T> d(g.size(), T(-1));
-            // RadixHeap<T, int> Q;
-            // d[start] = 0;
-            // Q.push(0, start);
-            // while (!Q.empty()) {
-            //     auto p = Q.pop();
-            //     int u = p.second;
-            //     if (d[u] < T(p.first)) continue;
-            //     T du = d[u];
-            //     for (auto&& [v, c] : g[u]) {
-            //         if (d[v] == T(-1) || du + c < d[v]) {
-            //             d[v] = du + c;
-            //             Q.push(d[v], v);
-            //         }
-            //     }
-            // }
-            // return d;
-        }
+    template <typename... Args>
+    void add_edge(int u, Args&&... args) {
+    #pragma GCC diagnostic ignored "-Wnarrowing"
+        buf.emplace_back(u, E<T>(std::forward<Args>(args)...));
+    #pragma GCC diagnostic warning "-Wnarrowing"
+        ++head[u];
+        if ((int)buf.size() == M) build();
+    }
 
-        vector<Edge> get_edge_list(ll s) {
-            vector<Edge> edge_list(N);
-            for(ll i = 0; i < N; i++) edge_list[i].edge_id = -1;
-            priority_queue<pll, vector<pll>, greater<pll> > que;
-            for(ll i = 0; i < N; i++) dist[i] = 1000000000;
-            dist[s] = 0;
-            edge_list[s].edge_id = -2;
-            que.push(pll(0, s));
-            while(!que.empty()){
-                pll p = que.top(); que.pop();
-                ll v = p.second;
-                if(dist[v] < p.first) continue;
-                for(Dijkstra_Edge e: graph[v]) {
-                    if(dist[e.to] > dist[v] + e.cost){
-                        dist[e.to] = dist[v] + e.cost;
-                        Edge tmp_edge;
-                        tmp_edge.edge_id = 0;
-                        tmp_edge.from = v;
-                        tmp_edge.to = e.to;
-                        tmp_edge.cost = e.cost;
-                        edge_list[e.to] = tmp_edge;
-                        que.push(pll(dist[e.to], e.to));
-                    }
-                }
-            }
-            return edge_list;
-        }
+    Es<typename vector<E<T> >::iterator> operator[](int u) {
+        return {begin(es) + head[u], begin(es) + head[u + 1]};
+    }
+    const Es<typename vector<E<T> >::const_iterator> operator[](int u) const {
+        return {begin(es) + head[u], begin(es) + head[u + 1]};
+    }
+    int size() const { return N; }
+};
 
-        ll dfs(Dijkstra_Edge v) {
-            if(graph[v.to].size() == 0) {
-                score += (N - 1) * v.cost;
-                return 1;
-            }
-            ll node_count = 1;
-            for(Dijkstra_Edge e: graph[v.to]) {
-                node_count += dfs(e);
-            }
-            score += (N - node_count) * node_count * v.cost; 
-            return node_count;
-        }
+}  // namespace StaticGraphImpl
 
-        ll get_score(ll s) {
-            score = 0;
-            dfs(Dijkstra_Edge(s, 0));
-            
-            return score;
-        }
+using StaticGraphImpl::StaticGraph;
 
+
+
+
+template <typename Key, typename Val>
+struct RadixHeap {
+    using uint = typename make_unsigned<Key>::type;
+    static constexpr int bit = sizeof(Key) * 8;
+    array<vector<pair<uint, Val> >, bit + 1> vs;
+    array<uint, bit + 1> ms;
+
+    int s;
+    uint last;
+
+    RadixHeap() : s(0), last(0) { fill(begin(ms), end(ms), uint(-1)); }
+
+    bool empty() const { return s == 0; }
+
+    int size() const { return s; }
+
+    __attribute__((target("lzcnt"))) inline uint64_t getbit(uint a) const {
+        return 64 - __builtin_clzll(a);
+    }
+
+    void push(const uint &key, const Val &val) {
+        s++;
+        uint64_t b = getbit(key ^ last);
+        vs[b].emplace_back(key, val);
+        ms[b] = min(key, ms[b]);
+    }
+
+    pair<uint, Val> pop() {
+        if (ms[0] == uint(-1)) {
+            int idx = 1;
+            while (ms[idx] == uint(-1)) idx++;
+            last = ms[idx];
+            for (auto &p : vs[idx]) {
+                uint64_t b = getbit(p.first ^ last);
+                vs[b].emplace_back(p);
+                ms[b] = min(p.first, ms[b]);
+            }
+            vs[idx].clear();
+            ms[idx] = uint(-1);
+        }
+        --s;
+        auto res = vs[0].back();
+        vs[0].pop_back();
+        if (vs[0].empty()) ms[0] = uint(-1);
+        return res;
+    }
 };
 
 
 
-
-
+template <typename T>
+vector<T> dijkstra(StaticGraph<T>& g, int start = 0) {
+    vector<T> d(g.size(), T(1000000000));
+    RadixHeap<T, int> Q;
+    d[start] = 0;
+    Q.push(0, start);
+    while (!Q.empty()) {
+        auto p = Q.pop();
+        int u = p.second;
+        if (d[u] < T(p.first)) continue;
+        T du = d[u];
+        for (auto&& [v, c] : g[u]) {
+            if (d[v] == T(1000000000) || du + c < d[v]) {
+                d[v] = du + c;
+                Q.push(d[v], v);
+            }
+        }
+    }
+    return d;
+}
 
 
 
@@ -307,9 +257,6 @@ struct UnionFind {
 };
 
 
-
-
-
 template <typename T> vector<T> random_sample(vector<T> population, int k) {
     if((ll)population.size() < k) {
         return population;
@@ -327,7 +274,7 @@ template <typename T> vector<T> random_sample(vector<T> population, int k) {
 
 
 struct Info {
-    vector<ll> construction_day_list;
+    vector<short> construction_day_list;
     
     vector<Edge> edge_list_per_day[31];
 
@@ -344,37 +291,63 @@ struct Score {
     vector<Edge> edge_list;
     ll penalty_count;
     Info info;
-    // vector<vector<ll> > scores;
     
-    Score(vector<ll> _construction_day_list, vector<Edge> _edge_list)  {
+    Score(vector<short> _construction_day_list, vector<Edge> _edge_list)  {
         edge_list = _edge_list;
         info.construction_day_list = _construction_day_list;
         rep(i, M) info.edge_list_per_day[info.construction_day_list[edge_list[i].edge_id]].push_back(edge_list[i]);
         penalty_count = 0;
     }
 
-    vector<ll> compute_dist_vector(ll day) { // O(MlogN) = 3000 * 7 = 2*10**4 = 0.2ms
-        // vector<Edge> new_edge_list;
-        // for(ll i = 0; i < M; i++) {
-        //     if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
-        //     new_edge_list.push_back(edge_list[i]);
-        // }
-        Dijkstra djk = Dijkstra(edge_list, info.construction_day_list, day);
-        return djk.get_dist(day);
+    vector<ll> compute_dist_vector(short day) { // O(MlogN) = 3000 * 7 = 2*10**4 = 0.2ms
+        vector<Edge> new_edge_list;
+        for(short i = 0; i < M; i++) {
+            if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
+            new_edge_list.push_back(edge_list[i]);
+        }
+        StaticGraph<ll> g(N, (ll)new_edge_list.size()*2);
+        rep(i, (ll)new_edge_list.size()) {
+            g.add_edge(new_edge_list[i].from, new_edge_list[i].to, new_edge_list[i].cost);
+            g.add_edge(new_edge_list[i].to, new_edge_list[i].from, new_edge_list[i].cost);
+        }
+        return dijkstra(g, day);
     }
 
     vector<vector<ll> > compute_dist_matrix(ll day) { // O(NMlogN) = 1000 * 3000 * 7 = 2*10**7 = 200ms
-        // vector<Edge> new_edge_list;
-        // for(ll i = 0; i < M; i++) {
-        //     if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
-        //     new_edge_list.push_back(edge_list[i]);
-        // }
-        Dijkstra djk = Dijkstra(edge_list, info.construction_day_list, day);
+        vector<Edge> new_edge_list;
+        for(short i = 0; i < M; i++) {
+            if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
+            new_edge_list.push_back(edge_list[i]);
+        }
+        StaticGraph<ll> g(N, (ll)new_edge_list.size()*2);
+        rep(i, (ll)new_edge_list.size()) {
+            g.add_edge(new_edge_list[i].from, new_edge_list[i].to, new_edge_list[i].cost);
+            g.add_edge(new_edge_list[i].to, new_edge_list[i].from, new_edge_list[i].cost);
+        }
         vector<vector<ll> > tmp_dist;
         for(ll s = 0; s < N; s++) {
-            tmp_dist.push_back(djk.get_dist(s));
+            tmp_dist.push_back(dijkstra(g, s));
         }
         return tmp_dist;
+    }
+
+    ll evaluate_score(short day, short s1, short s2) { // O(MlogN) = O(30000) 
+        vector<Edge> new_edge_list;
+        for(short i = 0; i < M; i++) {
+            if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
+            new_edge_list.push_back(edge_list[i]);
+        }
+        StaticGraph<ll> g(N, (ll)new_edge_list.size()*2);
+        for(short i = 0; i < (ll)new_edge_list.size(); i++) {
+            g.add_edge(new_edge_list[i].from, new_edge_list[i].to, new_edge_list[i].cost);
+            g.add_edge(new_edge_list[i].to, new_edge_list[i].from, new_edge_list[i].cost);
+        }
+        vector<ll> tmp_dist = dijkstra(g, s1);
+        ll score = 0;
+        rep(i, N) score += tmp_dist[i];
+        tmp_dist = dijkstra(g, s2);
+        rep(i, N) score += tmp_dist[i];
+        return score;
     }
 
 
@@ -417,121 +390,7 @@ struct Score {
         }
     }
 
-    ll evaluate_score(ll day, ll s) { // O(M * logN) = O(30000) 
-        // vector<Edge> new_edge_list;
-        // for(ll i = 0; i < M; i++) {
-        //     if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
-        //     new_edge_list.push_back(edge_list[i]);
-        // }
-
-
-
-        // vector<Edge> new_edge_list;
-        // for(ll i = 0; i < M; i++) {
-        //     if(info.construction_day_list[edge_list[i].edge_id] == day) continue;
-        //     new_edge_list.push_back(edge_list[i]);
-        // }
-        // StaticGraph<ll> g(N, (ll)new_edge_list.size()*2);
-        // rep(i, (ll)new_edge_list.size()) {
-        //     g.add_edge(new_edge_list[i].from, new_edge_list[i].to, new_edge_list[i].cost);
-        //     g.add_edge(new_edge_list[i].to, new_edge_list[i].from, new_edge_list[i].cost);
-        // }
-
-        // vector<ll> tmp_dist = dijkstra(g, s);
-        // ll score = 0;
-        // rep(i, N) score += tmp_dist[i];
-        // return score;
-        Dijkstra djk = Dijkstra(edge_list, info.construction_day_list, day);
-        vector<ll> tmp_dist = djk.get_dist(s);
-        ll score = 0;
-        rep(i, N) {
-            score += tmp_dist[i];
-        }
-        return score;
-
-
-    }
-
-
-    // Response edge_swap(ll day1, ll day2, ll num=1) {
-    //     if(day1 == day2) return Failed;
-    //     Info sub_info = info;
-    //     swap(info, sub_info);
-    //     num = min(num, (ll)info.edge_list_per_day[day1].size());
-    //     num = min(num, (ll)info.edge_list_per_day[day2].size());
-    //     vector<Edge> edge_list1, edge_list2;
-    //     rep(i, num) {
-    //         ll idx1 = rand()%info.edge_list_per_day[day1].size();
-    //         ll idx2 = rand()%info.edge_list_per_day[day2].size();
-    //         edge_list1.push_back(info.edge_list_per_day[day1][idx1]);
-    //         edge_list2.push_back(info.edge_list_per_day[day2][idx2]);
-    //         info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
-    //         info.edge_list_per_day[day2].erase(info.edge_list_per_day[day2].begin() + idx2);
-    //     }
-    //     rep(i, num) {
-    //         info.edge_list_per_day[day1].push_back(edge_list2[i]);
-    //         info.edge_list_per_day[day2].push_back(edge_list1[i]);
-    //     }
-
-    //     ll before_day1_edge1_score = 0;
-    //     rep(i, num) {
-    //         before_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
-    //         before_day1_edge1_score += evaluate_score(day1, edge_list2[i].from);
-    //     }
-    //     ll before_day1_edge2_score = 0;
-    //     rep(i, num) {
-    //         before_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
-    //         before_day1_edge2_score += evaluate_score(day1, edge_list2[i].to);
-    //     }
-    //     ll before_day1_score = before_day1_edge1_score + before_day1_edge2_score;
-
-    //     ll before_day2_edge1_score = 0;
-    //     rep(i, num) {
-    //         before_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
-    //         before_day2_edge1_score += evaluate_score(day2, edge_list2[i].from);
-    //     }
-    //     ll before_day2_edge2_score = 0;
-    //     rep(i, num) {
-    //         before_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
-    //         before_day2_edge2_score += evaluate_score(day2, edge_list2[i].to);
-    //     }
-    //     ll before_day2_score = before_day2_edge1_score + before_day2_edge2_score;
-
-    //     rep(i, num) info.construction_day_list[edge_list1[i].edge_id] = day2;
-    //     rep(i, num) info.construction_day_list[edge_list2[i].edge_id] = day1;
-
-    //     ll after_day1_edge1_score = 0;
-    //     rep(i, num) {
-    //         after_day1_edge1_score += evaluate_score(day1, edge_list1[i].from);
-    //         after_day1_edge1_score += evaluate_score(day1, edge_list2[i].from);
-    //     }
-    //     ll after_day1_edge2_score = 0;
-    //     rep(i, num) {
-    //         after_day1_edge2_score += evaluate_score(day1, edge_list1[i].to);
-    //         after_day1_edge2_score += evaluate_score(day1, edge_list2[i].to);
-    //     }
-    //     ll after_day1_score = after_day1_edge1_score + after_day1_edge2_score;
-
-    //     ll after_day2_edge1_score = 0;
-    //     rep(i, num) {
-    //         after_day2_edge1_score += evaluate_score(day2, edge_list1[i].from);
-    //         after_day2_edge1_score += evaluate_score(day2, edge_list2[i].from);
-    //     }
-    //     ll after_day2_edge2_score = 0;
-    //     rep(i, num) {
-    //         after_day2_edge2_score += evaluate_score(day2, edge_list1[i].to);
-    //         after_day2_edge2_score += evaluate_score(day2, edge_list2[i].to);
-    //     }
-    //     ll after_day2_score = after_day2_edge1_score + after_day2_edge2_score;
-
-    //     // 工事日を変更してスコアが悪化する場合
-    //     if(after_day1_score + after_day2_score >= before_day1_score + before_day2_score) {
-    //         swap(info, sub_info);
-    //         return Failed;
-    //     }
-    //     // 成功
-    //     return OK;
-    // }
+    
     
 
     Response edge_move(ll day1, ll day2) {
@@ -547,39 +406,24 @@ struct Score {
         info.edge_list_per_day[day2].push_back(edge);
         info.edge_list_per_day[day1].erase(info.edge_list_per_day[day1].begin() + idx1);
 
-        ll before_day1_edge1_score = evaluate_score(day1, edge.from);
-        ll before_day1_edge2_score = evaluate_score(day1, edge.to);
-        ll before_day1_score = before_day1_edge1_score + before_day1_edge2_score;
+        ll before_day1_score = evaluate_score(day1, edge.from, edge.to);
 
-        ll before_day2_edge1_score = evaluate_score(day2, edge.from);
-        ll before_day2_edge2_score = evaluate_score(day2, edge.to);
-        ll before_day2_score = before_day2_edge1_score + before_day2_edge2_score;
+        ll before_day2_score = evaluate_score(day2, edge.from, edge.to);
 
         info.construction_day_list[edge.edge_id] = day2;
 
-        ll after_day1_edge1_score = evaluate_score(day1, edge.from);
-        ll after_day1_edge2_score = evaluate_score(day1, edge.to);
-        ll after_day1_score = after_day1_edge1_score + after_day1_edge2_score;
+        ll after_day1_score = evaluate_score(day1, edge.from, edge.to);
 
-        ll after_day2_edge1_score = evaluate_score(day2, edge.from);
-        ll after_day2_edge2_score = evaluate_score(day2, edge.to);
-        ll after_day2_score = after_day2_edge1_score + after_day2_edge2_score;
+        ll after_day2_score = evaluate_score(day2, edge.from, edge.to);
         
         ll score = (before_day1_score + before_day2_score) - (after_day1_score + after_day2_score);
         if(score >= 0) {
             // 成功
             return OK;
         }else {
-            // ll prob = exp((ld)score / temp) * 100;
-            // if(prob > rand()%100) {
-            //     // 多少悪化しても許容
-            //     return OK;
-            // }else {
-                // 工事日を移動してスコアが悪化する場合
-                swap(info, sub_info);
-                return Failed;
-            // }
-           
+            // 工事日を移動してスコアが悪化する場合
+            swap(info, sub_info);
+            return Failed;
         }
         
     }
@@ -626,21 +470,20 @@ struct Score {
 
 int main() {
     clock_t start = clock();
+    IOS;
     cin >> N >> M >> D >> K;
     vector<Edge> edge_list(M);
-    vector<ll> unconstructed_edge_list(M);
-    vector<ll> construction_day_list(M);
+    vector<short> construction_day_list(M);
     vector<ll> construction_vacant_count_per_day(D, K);
     for(ll i = 0; i < M; i++) {
         edge_list[i].edge_id = i;
         cin >> edge_list[i].from >> edge_list[i].to >> edge_list[i].cost;
         edge_list[i].from--;
         edge_list[i].to--;
-        unconstructed_edge_list[i] = edge_list[i].edge_id;
     }
 
-    // 初期状態のconstruction_day_listを作成
     // sort(edge_list.begin(), edge_list.end());
+    // 初期状態のconstruction_day_listを作成
     for(ll d = 0; d < D; d++) {
         UnionFind uf = UnionFind(N);
         
@@ -659,18 +502,17 @@ int main() {
             edge_list[i].road_status = Occupied;
         }
         
-
-        vector<Edge*> unconstructed_edge;
+        vector<Edge*> unconstructed_edge_list;
         for(ll i = 0; i < M; i++) {
             if(edge_list[i].road_status != Unconstructed) continue;
-            unconstructed_edge.push_back(&edge_list[i]);
+            unconstructed_edge_list.push_back(&edge_list[i]);
         }
 
-        // unconstructed_edge = random_sample(unconstructed_edge, min((ll)unconstructed_edge.size(), K - 1));
-        unconstructed_edge = random_sample(unconstructed_edge, min((ll)unconstructed_edge.size(), (M + D - 1) / D));
-        for(ll i = 0; i < unconstructed_edge.size(); i++) {
-            unconstructed_edge[i]->road_status = Constructed;
-            construction_day_list[unconstructed_edge[i]->edge_id] = d + 1;
+        unconstructed_edge_list = random_sample(unconstructed_edge_list, min((ll)unconstructed_edge_list.size(), (M + D - 1) / D));
+        // 工事日を確定
+        for(ll i = 0; i < unconstructed_edge_list.size(); i++) {
+            unconstructed_edge_list[i]->road_status = Constructed;
+            construction_day_list[unconstructed_edge_list[i]->edge_id] = d + 1;
             construction_vacant_count_per_day[d]--;
         }
     }
@@ -696,14 +538,10 @@ int main() {
     Score score = Score(construction_day_list, edge_list);
     ll cnt = 0;
     ll ok_cnt = 0;
-   // ll start_temp = 1000000;
-    //ll end_temp = 10;
     
     while(true) {
         clock_t end = clock();
         if((ld)(end - start) / CLOCKS_PER_SEC > limit) break;
-        // ld time = (ld)(end - start) / CLOCKS_PER_SEC;
-        // ld temp = start_temp + (end_temp - start_temp) * (ld)time / limit;
         if(penalty_edge_list.size() > 0) {
             ll penalty_edge_idx = rand()%penalty_edge_list.size();
             ll tmp_after_day = (rand()%D) + 1;
@@ -711,70 +549,23 @@ int main() {
             if(response == OK) {
                 penalty_edge_list.erase(penalty_edge_list.begin() + penalty_edge_idx);
             }
-            // else if(response == Penalty) {
-            // }else if(response == Failed) {
-            // }else if(response == FatalError) {
-            //     return 0;
-            // }
         }else {
             ll day1 = (rand()%D) + 1;
             ll day2 = (rand()%D) + 1;
 
-            Response response;
-            // if(rand()%100 < 100) {
-            response = score.edge_move(day1, day2);
-            // }else {
-            //     response = score.edge_swap(day1, day2);
-            // }
+            Response response = score.edge_move(day1, day2);
             cnt++;
             if(response == OK) {
                 ok_cnt++;
-                // if(cnt % 10 == 0) {
-                //     cerr << score.compute_score() << endl;
-                // }
             }
-            // else if(response == Penalty) {
-            // }else if(response == Failed) {
-            // }else if(response == FatalError) {
-            //     return 0;
-            // }
         }
         
     }
-    // // if(penalty_edge_list.size() > 0) cerr << "################" << endl;
-    // // clock_t end = clock();
-    // // cerr << setprecision(10) << (ld)(end - start) / CLOCKS_PER_SEC << endl;
+
     score.info.dump();
-    // 注意点、入れ替え実装できていないから本番2000ケースで落ちる可能性高い
-    // day=5とか危ない、普通にバカ重い
     
     cerr << score.compute_score() << endl;
     cerr << cnt << endl;
     cerr << ok_cnt << endl;
-    // for(ll i = 0; i < D; i++) {
-    //     cerr << construction_vacant_count_per_day[i] << " \n"[i == D - 1];
-    // }
-
-
-    // N = 4, N = 6;
-    // vector<ll> from_nodes = {0, 0, 0, 1, 1, 2};
-    // vector<ll> to_nodes =   {1, 2, 3, 2, 3, 3};
-    // vector<ll> cost_nodes = {1, 2, 3, 4, 5, 6};
-    // vector<Edge> edge_nodes;
-    // for(ll i = 0; i < N; i++) {
-    //     Edge tmp_edge;
-    //     tmp_edge.edge_id = 0;
-    //     tmp_edge.from = from_nodes[i];
-    //     tmp_edge.to = to_nodes[i];
-    //     tmp_edge.cost = cost_nodes[i];
-    //     edge_nodes.push_back(tmp_edge);
-    // }
-    // Dijkstra djk = Dijkstra(edge_nodes);
-    // vector<ll> dist = djk.get_dist(0);
-    // for(ll i = 0; i < N; i++) cout << dist[i] << endl;
-    // vector<Edge> next_edges = djk.get_edge_list(0);
-    // for(int i = 0; i < next_edges.size(); i++) cerr << "edges "<< next_edges[i] << endl;
-    // Dijkstra next_djk = Dijkstra(next_edges, true);
-    // cout << next_djk.get_score(0) << endl;
 
 }
