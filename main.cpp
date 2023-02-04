@@ -23,7 +23,7 @@ typedef enum {
 } Response;
 
 short N, M, D, K;
-ld limit = 5.7;
+ld limit = 3.0;
 constexpr ll INF = 1e18;
 
 struct Edge {
@@ -362,6 +362,7 @@ struct Score {
     Response delete_penalty(Edge edge, ll to_day) {
         ll from_day = info.construction_day_list[edge.edge_id]; // 現在の工事日を把握
         if(from_day == to_day) return Failed;
+        if(info.edge_list_per_day[to_day].size() >= K) return Failed;
         ll before_penalty_count = 0;
         vector<int> dist_from_day = compute_dist_vector(from_day);
         vector<int> dist_to_day   = compute_dist_vector(to_day);
@@ -541,11 +542,10 @@ int main() {
     }
 
     Score score = Score(construction_day_list, edge_list);
-    ll cnt = 0;
-    ll ok_cnt = 0;
-    
+    vector<short> binary_selection1(D), binary_selection2(D);
     while(true) {
         clock_t end = clock();
+        
         if((ld)(end - start) / CLOCKS_PER_SEC > limit) break;
         if(penalty_edge_list.size() > 0) {
             ll penalty_edge_idx = rand()%penalty_edge_list.size();
@@ -555,18 +555,26 @@ int main() {
                 penalty_edge_list.erase(penalty_edge_list.begin() + penalty_edge_idx);
             }
         }else {
-            ll day1 = (rand()%D) + 1;
-            ll day2 = (rand()%D) + 1;
-
+            for(ll d = 1; d <= D; d++) {
+                if(d == 1) {
+                    binary_selection1[d - 1] = score.info.edge_list_per_day[d].size();
+                    binary_selection2[d - 1] = K - score.info.edge_list_per_day[d].size();
+                }else {
+                    binary_selection1[d - 1] = binary_selection1[d - 2] + score.info.edge_list_per_day[d].size();
+                    binary_selection2[d - 1] = binary_selection2[d - 2] + (K - score.info.edge_list_per_day[d].size());
+                }
+            }
+            ll day1 = lower_bound(binary_selection1.begin(), binary_selection1.end(), (rand()%M + 1)) - binary_selection1.begin() + 1;
+            ll day2 = lower_bound(binary_selection2.begin(), binary_selection2.end(), (rand()%(K*D - M) + 1)) - binary_selection2.begin() + 1;
             score.edge_move(day1, day2);
-            
         }
         
     }
 
     score.info.dump();
-  	
-    
-    
+  	cerr << score.compute_score() << endl;
+    rep(i, D) {
+        cerr << score.info.edge_list_per_day[i].size() << " \n"[i == D - 1];
+    }
 
 }
