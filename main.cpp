@@ -542,7 +542,9 @@ int main() {
     }
 
     Score score = Score(construction_day_list, edge_list);
-    vector<short> binary_selection1(D), binary_selection2(D);
+    ll cnt = 0;
+    ll ok_cnt = 0;
+    bool flag = false;
     while(true) {
         clock_t end = clock();
         
@@ -555,17 +557,8 @@ int main() {
                 penalty_edge_list.erase(penalty_edge_list.begin() + penalty_edge_idx);
             }
         }else {
-            for(ll d = 1; d <= D; d++) {
-                if(d == 1) {
-                    binary_selection1[d - 1] = score.info.edge_list_per_day[d].size();
-                    binary_selection2[d - 1] = K - score.info.edge_list_per_day[d].size();
-                }else {
-                    binary_selection1[d - 1] = binary_selection1[d - 2] + score.info.edge_list_per_day[d].size();
-                    binary_selection2[d - 1] = binary_selection2[d - 2] + (K - score.info.edge_list_per_day[d].size());
-                }
-            }
-            ll day1 = lower_bound(binary_selection1.begin(), binary_selection1.end(), (rand()%M + 1)) - binary_selection1.begin() + 1;
-            ll day2 = lower_bound(binary_selection2.begin(), binary_selection2.end(), (rand()%(K*D - M) + 1)) - binary_selection2.begin() + 1;
+            ll day1 = (rand()%D) + 1;
+            ll day2 = (rand()%D) + 1;
             score.edge_move(day1, day2);
         }
         
@@ -573,8 +566,7 @@ int main() {
 
     score.info.dump();
   	cerr << score.compute_score() << endl;
-    rep(i, D) {
-        cerr << score.info.edge_list_per_day[i].size() << " \n"[i == D - 1];
-    }
+    
+    
 
 }
